@@ -1,9 +1,10 @@
 <?php
 
+
 /**
  * Mở kết nối đến CSDL sử dụng PDO
  *
- * @param string $db_name Tên database cần kết nối (ví dụ: 'user_management')
+ * @param string $db_name Tên database cần kết nối )
  * @return PDO
  * @throws Exception
  */

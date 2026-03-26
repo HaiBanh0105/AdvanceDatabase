@@ -19,7 +19,7 @@
                 <i class="fa-solid fa-crown text-white text-2xl"></i>
             </div>
             <h1 class="text-3xl font-black text-slate-800 tracking-tight">Chào mừng trở lại!</h1>
-            <p class="text-slate-500 mt-2">Vui lòng đăng nhập để quản lý đặt phòng.</p>
+            <p class="text-slate-500 mt-2">Vui lòng đăng nhập để tiếp tục.</p>
         </div>
 
         <div class="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/60 border border-slate-100">
@@ -49,6 +49,10 @@
                         <input type="password" id="password" name="password" required
                                class="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
                                placeholder="••••••••">
+
+                               <button type="button" id="togglePassword" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors focus:outline-none">
+            <i id="eyeIcon" class="fa-solid fa-eye"></i>
+        </button>
                     </div>
                 </div>
 
