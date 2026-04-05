@@ -3,7 +3,7 @@ CREATE DATABASE hotel_management_db;
 USE hotel_management_db;
 
 -- 1. Bảng User: Tài khoản đăng nhập [cite: 2]
-CREATE TABLE User (
+CREATE TABLE `User` (
     user_id INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
     phone VARCHAR(20),
@@ -22,7 +22,7 @@ CREATE TABLE User_detail (
     ID_number VARCHAR(50),
     balance DECIMAL(15, 2) DEFAULT 0.00, -- Chuyển từ MONEY sang DECIMAL [cite: 4]
     status VARCHAR(50),
-    FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES `User`(user_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 3. Bảng Bank_account: Tài khoản ngân hàng (Không bắt buộc) [cite: 6]
@@ -33,7 +33,7 @@ CREATE TABLE Bank_account (
     cardholder_name VARCHAR(255),
     CVV TINYINT,
     expiry_date DATE,
-    FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES `User`(user_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
@@ -69,7 +69,7 @@ CREATE TABLE Booking (
     payment_status VARCHAR(50),
     note TEXT,
     status VARCHAR(50),
-    FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES `User`(user_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 7. Bảng Booking_detail: Chi tiết từng phòng trong đơn đặt [cite: 16]
@@ -87,7 +87,7 @@ CREATE TABLE Booking_detail (
 USE hotel_management_db;
 
 -- 1. Chèn dữ liệu vào bảng User (Mật khẩu nên được hash trong thực tế) 
-INSERT INTO User (email, phone, password, role) VALUES 
+INSERT INTO `User` (email, phone, password, role) VALUES 
 ('vodathai91thcsduclap@gmail.com', '0772663776', 'admin123', 'Admin'),
 ('admin@gmail.com', '0987654321', 'admin123', 'Admin'),
 ('nv@gmail.com', '0901234567', 'nv123', 'Customer');

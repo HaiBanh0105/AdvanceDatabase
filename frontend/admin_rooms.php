@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- Giao diện Quản lý Phòng (Admin) -->
 <html lang="vi">
 <head>
     <meta charset="UTF-8">

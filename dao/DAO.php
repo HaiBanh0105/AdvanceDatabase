@@ -1,4 +1,5 @@
 <?php
+/** File Adapter kết nối DAO tự động */
 // Điều chỉnh đường dẫn tương đối đến file pdo.php
 require_once('../config/pdo.php');
 
@@ -44,11 +45,4 @@ function db_query_value($sql)
     $args = array_slice(func_get_args(), 1);
     return pdo_query_value(DB_NAME, $sql, $args);
 }
-
-
-// ------------------------------------
-// Phần 2: HÀM NGHIỆP VỤ (BUSINESS LOGIC)
-// ------------------------------------
-
-
-
+?>

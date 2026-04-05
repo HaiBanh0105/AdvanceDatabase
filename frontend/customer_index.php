@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- Giao diện Trang chủ Khách hàng -->
 <html lang="vi">
 <head>
     <meta charset="UTF-8">

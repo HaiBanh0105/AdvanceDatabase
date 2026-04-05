@@ -1,5 +1,5 @@
+/** File xử lý Giao diện Đăng nhập */
 document.addEventListener("DOMContentLoaded", function () {
-  // 1. "Gọi" các phần tử HTML cần thiết
   const loginForm = document.getElementById("loginForm");
   const alertBox = document.getElementById("alertBox");
   const alertMessage = document.getElementById("alertMessage");

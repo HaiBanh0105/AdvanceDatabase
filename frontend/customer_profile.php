@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- Giao diện Hồ sơ cá nhân -->
 <html lang="vi">
 <head>
     <meta charset="UTF-8">

@@ -1,6 +1,11 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 // Lấy tên file hiện tại để xử lý logic "Active"
 $current_page = basename($_SERVER['PHP_SELF']);
+$full_name = $_SESSION['full_name'] ?? 'Khách';
+$balance = number_format($_SESSION['balance'] ?? 0, 0, ',', '.') . 'đ';
 ?>
 <nav class="fixed w-full z-50 bg-white/90 backdrop-blur-md border-b border-gray-100">
     <div class="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
@@ -19,10 +24,10 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
         <div class="flex items-center gap-6">
             <div class="text-right border-r pr-6 hidden sm:block">
-                <p class="text-[10px] text-gray-400 uppercase font-bold">Số dư </p>
-                <p class="text-sm font-bold text-indigo-600">5.450.000đ</p>
+                <p class="text-[10px] text-gray-400 uppercase font-bold"><?php echo htmlspecialchars($full_name); ?></p>
+                <p class="text-sm font-bold text-indigo-600"><?php echo $balance; ?></p>
             </div>
-            <a href="login.php" class="text-gray-500 hover:text-red-600 transition"><i class="fa-solid fa-right-from-bracket"></i></a>
+            <a href="../actions/process_logout.php" title="Đăng xuất" class="text-gray-500 hover:text-red-600 transition"><i class="fa-solid fa-right-from-bracket"></i></a>
         </div>
     </div>
 </nav>

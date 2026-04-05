@@ -24,7 +24,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         </nav>
 
     <div class="pt-6 border-t border-slate-800">
-        <a href="login.php" class="flex items-center gap-3 p-3 text-slate-500 hover:text-red-400 transition">
+        <a href="../actions/process_logout.php" class="flex items-center gap-3 p-3 text-slate-500 hover:text-red-400 transition">
             <i class="fa-solid fa-arrow-right-from-bracket w-5"></i> Đăng xuất
         </a>
     </div>

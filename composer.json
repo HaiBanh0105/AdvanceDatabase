@@ -1,0 +1,15 @@
+{
+    "name": "lichi/advance-database",
+    "autoload": {
+        "psr-4": {
+            "Lichi\\AdvanceDatabase\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "LiChinhHien",
+            "email": "lichinhhien@gmail.com"
+        }
+    ],
+    "require": {}
+}

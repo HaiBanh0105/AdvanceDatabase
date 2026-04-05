@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- Giao diện Quản lý Đơn đặt phòng -->
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
