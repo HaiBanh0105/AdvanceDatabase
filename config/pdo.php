@@ -13,27 +13,31 @@ function pdo_get_connection($db_name)
     static $connections = [];
 
     if (!isset($connections[$db_name])) {
-        $host = 'localhost';
-        $username = 'root';
-        $password = ''; // Cập nhật nếu có
+        // SQL Server thường dùng dấu phẩy để chỉ định Port nếu không dùng Port mặc định 1433
+        $host = 'localhost'; 
+        $username = ''; // Để trống nếu dùng Windows Authentication, hoặc điền 'sa'
+        $password = ''; // Mật khẩu của tài khoản SQL Server
 
-        $dburl = "mysql:host={$host};dbname={$db_name};charset=utf8";
+        // THAY ĐỔI: Cấu trúc DSN của SQL Server khác hoàn toàn MySQL
+        $dburl = "sqlsrv:Server={$host};Database={$db_name}";
 
         try {
             $conn = new PDO($dburl, $username, $password);
+            
+            // THAY ĐỔI: Bỏ các thuộc tính của MySQL (như MYSQL_ATTR_INIT_COMMAND)
             $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $conn->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
-            $conn->setAttribute(PDO::MYSQL_ATTR_INIT_COMMAND, "SET NAMES 'utf8'");
+            
+            // SQL Server hỗ trợ tốt Unicode qua NVARCHAR, không cần lệnh "SET NAMES utf8"
             $conn->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 
-            $connections[$db_name] = $conn; // Lưu lại kết nối
+            $connections[$db_name] = $conn;
         } catch (PDOException $e) {
-            error_log("Database Connection Error to {$db_name}: " . $e->getMessage());
-            throw new Exception("Không thể kết nối đến cơ sở dữ liệu ({$db_name}). Vui lòng kiểm tra cấu hình.");
+            error_log("Database Connection Error to SQL Server ({$db_name}): " . $e->getMessage());
+            throw new Exception("Không thể kết nối đến SQL Server. Vui lòng kiểm tra Driver và SSMS.");
         }
     }
 
-    return $connections[$db_name]; // Trả về kết nối đã lưu
+    return $connections[$db_name];
 }
 
 
