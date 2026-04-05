@@ -1,11 +1,6 @@
 <?php
 /** File xử lý Database cho Đăng nhập */
 require_once('DAO.php');
-
-/**
- * Kiểm tra đăng nhập và lấy thông tin phiên làm việc
- */
-
 function user_check_login($email, $password) {
     $sql = "SELECT u.user_id, u.email, u.role, u.password, ud.full_name, ud.balance 
             FROM `User` u 

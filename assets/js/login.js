@@ -1,5 +1,25 @@
 /** File xử lý Giao diện Đăng nhập */
 document.addEventListener("DOMContentLoaded", function () {
+  // Gọi các phần tử HTML cho tính năng ẩn/hiện
+  const passwordInput = document.getElementById("password");
+  const togglePasswordBtn = document.getElementById("togglePassword");
+  const eyeIcon = document.getElementById("eyeIcon");
+
+  // Lắng nghe sự kiện click vào nút con mắt
+  togglePasswordBtn.addEventListener("click", function () {
+    // Kiểm tra loại input hiện tại
+    const isPassword = passwordInput.getAttribute("type") === "password";
+
+    // Thay đổi loại input
+    passwordInput.setAttribute("type", isPassword ? "text" : "password");
+
+    // Thay đổi icon tương ứng (eye <-> eye-slash)
+    eyeIcon.classList.toggle("fa-eye");
+    eyeIcon.classList.toggle("fa-eye-slash");
+
+    // Giữ focus vào ô input sau khi click
+    passwordInput.focus();
+  });
   const loginForm = document.getElementById("loginForm");
   const alertBox = document.getElementById("alertBox");
   const alertMessage = document.getElementById("alertMessage");

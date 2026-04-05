@@ -1,5 +1,4 @@
 <?php
-/** File điều hướng chính (Cửa ngõ của hệ thống) */
 session_start();
 require_once __DIR__ . '/config/pdo.php';
 
