@@ -1,19 +1,19 @@
 <?php return array(
     'root' => array(
-        'name' => '__root__',
+        'name' => 'lichi/advance-database',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '7c154a4b93628c6dfaaa5c8a15065eec6addc53a',
+        'reference' => 'efca340f69325a2c99f4e7deea94979df5dd1574',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
         'dev' => true,
     ),
     'versions' => array(
-        '__root__' => array(
+        'lichi/advance-database' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '7c154a4b93628c6dfaaa5c8a15065eec6addc53a',
+            'reference' => 'efca340f69325a2c99f4e7deea94979df5dd1574',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
@@ -26,9 +26,9 @@
             ),
         ),
         'mongodb/mongodb' => array(
-            'pretty_version' => '2.2.0',
-            'version' => '2.2.0.0',
-            'reference' => 'bbb13f969e37e047fd822527543df55fdc1c9298',
+            'pretty_version' => '1.21.3',
+            'version' => '1.21.3.0',
+            'reference' => 'b8f569ec52542d2f1bfca88286f20d14a7f72536',
             'type' => 'library',
             'install_path' => __DIR__ . '/../mongodb/mongodb',
             'aliases' => array(),
@@ -40,15 +40,6 @@
             'reference' => 'f16e1d5863e37f8d8c2a01719f5b34baa2b714d3',
             'type' => 'library',
             'install_path' => __DIR__ . '/../psr/log',
-            'aliases' => array(),
-            'dev_requirement' => false,
-        ),
-        'symfony/polyfill-php85' => array(
-            'pretty_version' => 'v1.33.0',
-            'version' => '1.33.0.0',
-            'reference' => 'd4e5fcd4ab3d998ab16c0db48e6cbb9a01993f91',
-            'type' => 'library',
-            'install_path' => __DIR__ . '/../symfony/polyfill-php85',
             'aliases' => array(),
             'dev_requirement' => false,
         ),

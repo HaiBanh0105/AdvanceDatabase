@@ -22,7 +22,7 @@ function user_register($email, $phone, $password, $full_name) {
         $user_id = $conn->lastInsertId();
 
         // 3. Thêm vào bảng User_detail
-        $sql2 = "INSERT INTO User_detail (user_id, full_name, status, balance) VALUES (?, ?, 'active', 0.00)";
+        $sql2 = "INSERT INTO User_detail (user_id, full_name, status, balance) VALUES (?, ?, 'pending', 0.00)";
         $stmt2 = $conn->prepare($sql2);
         $stmt2->execute([$user_id, $full_name]);
 

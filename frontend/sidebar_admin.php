@@ -8,7 +8,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
     </div>
     
 
-    <nav class="space-y-4">
+    <nav class="space-y-4 flex-1">
             <a href="admin_dashboard.php" class="flex items-center gap-3 p-3 rounded-xl transition <?php echo ($current_page == 'admin_dashboard.php') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'; ?>">
                 <i class="fa-solid fa-chart-line w-5"></i> Tổng quan
             </a>
@@ -20,6 +20,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </a>
             <a href="admin_bookings.php" class="flex items-center gap-3 p-3 rounded-xl transition <?php echo ($current_page == 'admin_bookings.php') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'; ?>">
                 <i class="fa-solid fa-calendar-check w-5"></i> Đơn đặt phòng
+            </a>
+            <a href="admin_customers.php" class="flex items-center gap-3 p-3 rounded-xl transition <?php echo ($current_page == 'admin_customers.php') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'; ?>">
+                <i class="fa-solid fa-users w-5"></i> Quản lý Khách hàng
             </a>
         </nav>
 
