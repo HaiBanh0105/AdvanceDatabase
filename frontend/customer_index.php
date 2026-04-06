@@ -19,9 +19,13 @@ try {
             $has_reviewed = true;
         }
     }
+
+    // Lấy danh sách mã khuyến mãi (MongoDB)
+    $promotions = $mongo_db->promotions->find(['status' => 'active'])->toArray();
 } catch (Exception $e) {
     $reviews = [];
     $has_reviewed = true; // Tránh hiện form nếu MongoDB chưa bật
+    $promotions = [];
 }
 ?>
 <!DOCTYPE html>
@@ -44,7 +48,7 @@ try {
 
 <!-- Thông báo nổi -->
 <div id="toast-container" class="fixed top-24 right-6 z-[100] flex flex-col gap-3 pointer-events-none">
-    <?php if (isset($_GET['review']) && $_GET['review'] == 'success'): ?>
+    <?php if (isset($_GET['review']) && $_GET['review'] == 'added'): ?>
         <div class="toast-alert p-4 bg-emerald-100 text-emerald-600 border border-emerald-200 rounded-2xl text-sm font-bold flex items-center gap-3 shadow-lg transition-all duration-500 translate-x-0">
             <i class="fa-solid fa-circle-check text-lg"></i> Cảm ơn bạn đã gửi đánh giá!
         </div>
@@ -126,80 +130,29 @@ try {
     </div>
 </section>
 
-<section id="reviews" class="py-24 bg-indigo-50/50 border-t border-slate-100">
+<!-- Section Khuyến Mãi -->
+<?php if (!empty($promotions)): ?>
+<section id="promotions" class="py-20 bg-slate-50">
     <div class="max-w-7xl mx-auto px-6">
-        <div class="text-center mb-16">
-            <h2 class="text-3xl font-black text-slate-800 mb-4">Khách hàng nói gì về chúng tôi?</h2>
-            <div class="h-1 w-20 bg-indigo-600 mx-auto rounded-full mb-6"></div>
-            <p class="text-slate-500 max-w-2xl mx-auto">Hàng ngàn khách hàng đã trải nghiệm và hài lòng với dịch vụ tại Grand Horizon. Hãy chia sẻ cảm nhận của bạn nhé!</p>
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-bold text-gray-900 mb-4"><i class="fa-solid fa-tags text-indigo-600 mr-2"></i>Ưu đãi & Khuyến mãi</h2>
+            <div class="h-1 w-20 bg-indigo-600 mx-auto rounded-full"></div>
         </div>
-
-        <!-- Form Đánh giá -->
-        <?php if (isset($_SESSION['user_id']) && !$has_reviewed): ?>
-        <div class="max-w-2xl mx-auto bg-white p-8 rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 mb-16 relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
-            <h3 class="text-xl font-black text-slate-800 mb-6 flex items-center gap-3"><i class="fa-solid fa-pen-to-square text-indigo-500"></i> Để lại đánh giá của bạn</h3>
-            <form action="../actions/process_review.php" method="POST">
-                <div class="mb-5">
-                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Chấm điểm dịch vụ</label>
-                    <select name="rating" class="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-yellow-500 appearance-none">
-                        <option value="5">★★★★★ Tuyệt vời</option>
-                        <option value="4">★★★★☆ Rất tốt</option>
-                        <option value="3">★★★☆☆ Tạm được</option>
-                        <option value="2">★★☆☆☆ Không hài lòng</option>
-                        <option value="1">★☆☆☆☆ Rất tệ</option>
-                    </select>
-                </div>
-                <div class="mb-6">
-                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Cảm nhận của bạn</label>
-                    <textarea name="comment" rows="3" required placeholder="Chia sẻ trải nghiệm của bạn tại Grand Horizon..." class="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium text-slate-700 resize-none"></textarea>
-                </div>
-                <button type="submit" class="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-indigo-700 transition w-full shadow-lg shadow-indigo-100 flex items-center justify-center gap-2"><i class="fa-solid fa-paper-plane"></i> Gửi đánh giá ngay</button>
-            </form>
-        </div>
-        <?php elseif (!isset($_SESSION['user_id'])): ?>
-        <div class="text-center mb-16 p-8 bg-white rounded-[2rem] border border-slate-100 shadow-sm max-w-2xl mx-auto">
-            <div class="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl"><i class="fa-solid fa-lock"></i></div>
-            <h3 class="text-lg font-bold text-slate-800 mb-2">Bạn chưa đăng nhập</h3>
-            <p class="text-slate-500 text-sm mb-6">Vui lòng đăng nhập để có thể chia sẻ trải nghiệm và để lại đánh giá của bạn.</p>
-            <a href="login.php" class="inline-block px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition">Đăng nhập ngay</a>
-        </div>
-        <?php endif; ?>
-
-        <!-- Danh sách Đánh giá -->
-        <?php if (empty($reviews)): ?>
-            <div class="text-center text-slate-400 italic text-sm">Chưa có đánh giá nào. Hãy là người đầu tiên!</div>
-        <?php else: ?>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <?php foreach ($reviews as $rv): 
-                    $date = '';
-                    if (isset($rv['created_at']) && $rv['created_at'] instanceof MongoDB\BSON\UTCDateTime) {
-                        $date = $rv['created_at']->toDateTime()->setTimezone(new DateTimeZone('Asia/Ho_Chi_Minh'))->format('d/m/Y H:i');
-                    }
-                ?>
-                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-lg transition duration-300 flex flex-col">
-                    <div class="flex items-center gap-4 mb-6">
-                        <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 text-white rounded-full flex items-center justify-center font-black text-xl shadow-md">
-                            <?php echo mb_substr($rv['user_name'], 0, 1, 'UTF-8'); ?>
-                        </div>
-                        <div>
-                            <h4 class="font-bold text-slate-800"><?php echo htmlspecialchars($rv['user_name']); ?></h4>
-                            <div class="text-yellow-400 text-[10px] tracking-widest mt-1">
-                                <?php echo str_repeat('★', $rv['rating']) . str_repeat('☆', 5 - $rv['rating']); ?>
-                            </div>
-                        </div>
-                    </div>
-                    <p class="text-slate-600 text-sm italic leading-relaxed flex-1">"<?php echo htmlspecialchars($rv['comment']); ?>"</p>
-                    <div class="mt-6 pt-4 border-t border-slate-50 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                        <span>Đã xác thực</span>
-                        <span><?php echo $date; ?></span>
-                    </div>
-                </div>
-                <?php endforeach; ?>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <?php foreach ($promotions as $promo): ?>
+            <div class="bg-white p-6 rounded-3xl border border-dashed border-indigo-200 shadow-sm relative overflow-hidden flex flex-col items-center text-center hover:shadow-lg transition">
+                <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-2xl font-black mb-4">-<?= $promo['discount_percent'] ?>%</div>
+                <h3 class="text-lg font-black text-slate-800 mb-2 uppercase tracking-wide border-2 border-slate-800 px-4 py-1 rounded-lg border-dashed"><?= htmlspecialchars($promo['code']) ?></h3>
+                <p class="text-slate-500 text-sm leading-relaxed mb-4"><?= htmlspecialchars($promo['description']) ?></p>
+                <button onclick="copyPromoCode('<?= htmlspecialchars($promo['code']) ?>')" class="mt-auto text-indigo-600 font-bold text-sm hover:underline"><i class="fa-regular fa-copy"></i> Sao chép mã</button>
             </div>
-        <?php endif; ?>
+            <?php endforeach; ?>
+        </div>
     </div>
 </section>
+<?php endif; ?>
+
+<?php include 'review_section.php'; ?>
 
 <footer class="bg-slate-900 text-slate-300 py-16 border-t border-slate-800">
     <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
@@ -243,7 +196,7 @@ try {
             <ul class="space-y-4 text-sm text-slate-400">
                 <li class="flex items-start gap-3">
                     <i class="fa-solid fa-location-dot mt-1 text-indigo-500"></i>
-                    <span>Số 1, Đại lộ Tự Do, Quận 1<br>Thành phố Hồ Chí Minh, VN</span>
+                    <span>Số 19 Nguyễn Hữu Thọ, Phường Tân Phong, Quận 7<br>Thành phố Hồ Chí Minh, VN</span>
                 </li>
                 <li class="flex items-center gap-3">
                     <i class="fa-solid fa-phone text-indigo-500"></i>
@@ -276,6 +229,11 @@ try {
             });
         }, 3000);
     });
+
+    function copyPromoCode(code) {
+        navigator.clipboard.writeText(code);
+        alert("Đã sao chép mã khuyến mãi: " + code);
+    }
 </script>
 
 </body>

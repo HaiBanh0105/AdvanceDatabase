@@ -24,6 +24,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <a href="admin_customers.php" class="flex items-center gap-3 p-3 rounded-xl transition <?php echo ($current_page == 'admin_customers.php') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'; ?>">
                 <i class="fa-solid fa-users w-5"></i> Quản lý Khách hàng
             </a>
+            <a href="admin_promotions.php" class="flex items-center gap-3 p-3 rounded-xl transition <?php echo ($current_page == 'admin_promotions.php') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'; ?>">
+                <i class="fa-solid fa-users w-5"></i> Quản lý Khuyến mãi
+            </a>
         </nav>
 
     <div class="pt-6 border-t border-slate-800">

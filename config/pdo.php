@@ -13,24 +13,26 @@ function pdo_get_connection($db_name)
     static $connections = [];
 
     if (!isset($connections[$db_name])) {
-        $host = 'localhost'; 
+        // Đổi thành 127.0.0.1 để kết nối trực tiếp IPv4, tránh lỗi trên Windows
+        $host = '127.0.0.1'; 
         $username = 'root';
         $password = '';
 
         $dburl = "mysql:host={$host};dbname={$db_name};charset=utf8";
 
         try {
-            $conn = new PDO($dburl, $username, $password);
-            
-            $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $conn->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
-            $conn->setAttribute(PDO::MYSQL_ATTR_INIT_COMMAND, "SET NAMES 'utf8'");
-            $conn->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+            $options = [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_EMULATE_PREPARES => false,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+            ];
+            $conn = new PDO($dburl, $username, $password, $options);
 
             $connections[$db_name] = $conn;
         } catch (PDOException $e) {
             error_log("Database Connection Error to MySQL ({$db_name}): " . $e->getMessage());
-            throw new Exception("Không thể kết nối đến MySQL. Vui lòng kiểm tra XAMPP.");
+            // Hiển thị lỗi chính xác từ MySQL để dễ dàng khắc phục
+            throw new Exception("Lỗi MySQL: " . $e->getMessage());
         }
     }
 

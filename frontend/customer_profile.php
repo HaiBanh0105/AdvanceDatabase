@@ -119,7 +119,7 @@ $bank = db_query_one($sql_bank, $user_id);
                     <form action="../actions/process_update_profile.php" method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label class="block text-xs font-bold text-slate-400 uppercase mb-2 ml-1">Họ và tên</label>
-                            <input type="text" name="full_name" value="<?php echo htmlspecialchars($profile['full_name'] ?? ''); ?>" 
+                            <input type="text" name="full_name" value="<?php echo htmlspecialchars($profile['full_name'] ?? ''); ?>" required
                                    class="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all text-sm font-semibold text-slate-700">
                         </div>
 
@@ -137,7 +137,7 @@ $bank = db_query_one($sql_bank, $user_id);
 
                         <div>
                             <label class="block text-xs font-bold text-slate-400 uppercase mb-2 ml-1">Ngày sinh</label>
-                            <input type="date" name="dob" value="<?php echo htmlspecialchars($profile['dob'] ?? ''); ?>" 
+                            <input type="date" name="dob" value="<?php echo htmlspecialchars($profile['dob'] ?? ''); ?>" required
                                    class="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all text-sm font-semibold text-slate-700">
                         </div>
 
@@ -165,15 +165,20 @@ $bank = db_query_one($sql_bank, $user_id);
 
                         <div class="md:col-span-2">
                             <label class="block text-xs font-bold text-slate-400 uppercase mb-2 ml-1">Địa chỉ thường trú</label>
-                            <textarea name="address" rows="2" 
+                            <textarea name="address" rows="2" required
                                       class="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all text-sm font-semibold text-slate-700"><?php echo htmlspecialchars($profile['address'] ?? ''); ?></textarea>
                         </div>
 
                         <div class="md:col-span-2 pt-4">
-                            <button type="submit" 
-                                    class="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-100">
-                                Lưu thay đổi thông tin
-                            </button>
+                            <?php if(isset($profile['status']) && $profile['status'] === 'active'): ?>
+                                <div class="p-4 bg-emerald-50 text-emerald-600 rounded-2xl text-sm font-bold text-center border border-emerald-100">
+                                    <i class="fa-solid fa-shield-check mr-2"></i> Hồ sơ của bạn đã được Admin phê duyệt. Bạn không thể tự thay đổi thông tin.
+                                </div>
+                            <?php else: ?>
+                                <button type="submit" class="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 w-full md:w-auto">
+                                    Lưu thay đổi thông tin
+                                </button>
+                            <?php endif; ?>
                         </div>
                     </form>
                 </div>
