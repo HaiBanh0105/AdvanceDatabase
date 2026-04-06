@@ -41,6 +41,7 @@ if ($search_cccd !== '') {
         <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
                 <h1 class="text-2xl font-bold text-slate-800">Quản lý Khách hàng</h1>
+                <p class="text-slate-500 text-sm">Phê duyệt và chỉnh sửa thông tin khách hàng.</p>
             </div>
             
             <form action="" method="GET" class="flex items-center">

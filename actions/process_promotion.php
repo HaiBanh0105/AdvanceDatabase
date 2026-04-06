@@ -17,13 +17,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $code = strtoupper(trim($_POST['code']));
         $discount = (int)$_POST['discount'];
         $description = trim($_POST['description']);
+        $quantity = (int)($_POST['quantity'] ?? 0);
+        $expires_at = $_POST['expires_at'] ?? '';
+        
+        // Chuyển đổi thời gian sang chuẩn của MongoDB
+        $expires_mongo = !empty($expires_at) ? new MongoDB\BSON\UTCDateTime(strtotime($expires_at) * 1000) : new MongoDB\BSON\UTCDateTime();
 
         if (!empty($code) && $discount > 0) {
             $collection->insertOne([
                 'code' => $code,
                 'discount_percent' => $discount,
                 'description' => $description,
-                'status' => 'active'
+                'status' => 'active',
+                'quantity' => $quantity,
+                'created_at' => new MongoDB\BSON\UTCDateTime(),
+                'expires_at' => $expires_mongo
             ]);
         }
     } 
@@ -32,6 +40,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $code = strtoupper(trim($_POST['code']));
         $discount = (int)$_POST['discount'];
         $description = trim($_POST['description']);
+        $quantity = (int)($_POST['quantity'] ?? 0);
+        $expires_at = $_POST['expires_at'] ?? '';
+        $expires_mongo = !empty($expires_at) ? new MongoDB\BSON\UTCDateTime(strtotime($expires_at) * 1000) : new MongoDB\BSON\UTCDateTime();
 
         if (!empty($id) && !empty($code) && $discount > 0) {
             $collection->updateOne(
@@ -39,7 +50,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ['$set' => [
                     'code' => $code,
                     'discount_percent' => $discount,
-                    'description' => $description
+                    'description' => $description,
+                    'quantity' => $quantity,
+                    'expires_at' => $expires_mongo
                 ]]
             );
         }

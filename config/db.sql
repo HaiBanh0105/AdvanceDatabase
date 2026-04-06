@@ -3,7 +3,7 @@ DROP DATABASE IF EXISTS hotel_management_db;
 CREATE DATABASE hotel_management_db;
 USE hotel_management_db;
 
--- 1. Bảng User: Tài khoản đăng nhập
+-- 1. Bảng User
 CREATE TABLE `User` (
     user_id INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
@@ -12,7 +12,7 @@ CREATE TABLE `User` (
     role VARCHAR(50) DEFAULT 'Customer'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 2. Bảng User_detail: Chi tiết tài khoản
+-- 2. Bảng User_detail
 CREATE TABLE User_detail (
     detail_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT,
@@ -26,7 +26,7 @@ CREATE TABLE User_detail (
     FOREIGN KEY (user_id) REFERENCES `User`(user_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 3. Bảng Bank_account: Tài khoản ngân hàng
+-- 3. Bảng Bank_account
 CREATE TABLE Bank_account (
     card_id VARCHAR(50) PRIMARY KEY,
     user_id INT,
@@ -37,7 +37,7 @@ CREATE TABLE Bank_account (
     FOREIGN KEY (user_id) REFERENCES `User`(user_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 4. Bảng Room_types: Loại phòng
+-- 4. Bảng Room_types
 CREATE TABLE Room_types (
     type_id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -47,7 +47,7 @@ CREATE TABLE Room_types (
     image VARCHAR(500)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 5. Bảng Room: Danh sách phòng cụ thể 
+-- 5. Bảng Room
 CREATE TABLE Room (
     room_id INT AUTO_INCREMENT PRIMARY KEY,
     type_id INT,
@@ -57,7 +57,7 @@ CREATE TABLE Room (
     FOREIGN KEY (type_id) REFERENCES Room_types(type_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 6. Bảng Booking: Thông tin đặt phòng
+-- 6. Bảng Booking (đã gộp guest info)
 CREATE TABLE Booking (
     booking_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT,
@@ -69,10 +69,16 @@ CREATE TABLE Booking (
     payment_status VARCHAR(50),
     note TEXT,
     status VARCHAR(50),
+
+    -- Guest vãng lai
+    guest_name VARCHAR(255),
+    guest_phone VARCHAR(20),
+    guest_cccd VARCHAR(50),
+
     FOREIGN KEY (user_id) REFERENCES `User`(user_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 7. Bảng Booking_detail: Chi tiết từng phòng
+-- 7. Bảng Booking_detail
 CREATE TABLE Booking_detail (
     detail_id INT AUTO_INCREMENT PRIMARY KEY,
     booking_id INT,
@@ -84,14 +90,50 @@ CREATE TABLE Booking_detail (
     FOREIGN KEY (room_id) REFERENCES Room(room_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 1. Chèn dữ liệu vào bảng User
-INSERT INTO `User` (email, phone, password, role) VALUES 
-('vodathai91thcsduclap@gmail.com', '0772663776', 'admin123', 'Admin'),
-('admin@gmail.com', '0987654321', 'admin123', 'Admin'),
-('nv@gmail.com', '0901234567', 'nv123', 'Customer');
+-- ========================
+-- INSERT DỮ LIỆU MẪU
+-- ========================
 
--- 2. Chèn dữ liệu vào bảng User_detail
+-- User
+INSERT INTO `User` (email, phone, password, role) VALUES 
+('admin@gmail.com', '0987654321', 'admin123', 'Admin'),
+('customer1@gmail.com', '0901111111', '123456', 'Customer'),
+('customer2@gmail.com', '0902222222', '123456', 'Customer');
+
+-- User_detail
 INSERT INTO User_detail (user_id, full_name, dob, address, nation, ID_number, balance, status) VALUES 
-(1, 'Võ Đạt hải', '2005-01-01', '123 Đường Admin, TP.HCM', 'Việt Nam', '001090123456', 0.00, 'active'),
-(2, 'Võ Tấn Bền (Khách)', '1995-05-20', '456 Đường Python, Đà Nẵng', 'Việt Nam', '001095654321', 10500000.00, 'active'),
-(3, 'Nguyễn Văn Lợi', '1998-10-15', '789 Đường SQL, Hà Nội', 'Việt Nam', '001098111222', 5450000.00, 'active');
+(1, 'Admin System', '1990-01-01', 'TP.HCM', 'Việt Nam', '001000000001', 0, 'active'),
+(2, 'Nguyễn Văn A', '1995-05-20', 'Hà Nội', 'Việt Nam', '001000000002', 5000000, 'active'),
+(3, 'Trần Thị B', '1998-10-15', 'Đà Nẵng', 'Việt Nam', '001000000003', 3000000, 'active');
+
+-- Bank_account
+INSERT INTO Bank_account VALUES
+('1111222233334444', 2, 'Vietcombank', 'Nguyen Van A', 123, '2028-12-31'),
+('5555666677778888', 3, 'ACB', 'Tran Thi B', 456, '2027-06-30');
+
+-- Room_types
+INSERT INTO Room_types (name, price, capacity, description, image) VALUES
+('Standard', 300000, 2, 'Phòng tiêu chuẩn', 'standard.jpg'),
+('Deluxe', 500000, 3, 'Phòng cao cấp', 'deluxe.jpg'),
+('Suite', 800000, 4, 'Phòng VIP', 'suite.jpg');
+
+-- Room
+INSERT INTO Room (type_id, room_number, status) VALUES
+(1, '101', 'available'),
+(1, '102', 'available'),
+(2, '201', 'available'),
+(2, '202', 'maintenance'),
+(3, '301', 'available');
+
+-- Booking (có cả user và guest)
+INSERT INTO Booking (user_id, check_in, check_out, total_price, payment_method, payment_status, status) VALUES
+(2, '2026-04-10 14:00:00', '2026-04-12 12:00:00', 600000, 'Cash', 'Paid', 'Confirmed');
+
+-- Booking cho khách vãng lai
+INSERT INTO Booking (guest_name, guest_phone, guest_cccd, check_in, check_out, total_price, payment_method, payment_status, status) VALUES
+('Lê Văn C', '0909999999', '001099999999', '2026-04-15 14:00:00', '2026-04-16 12:00:00', 300000, 'Cash', 'Unpaid', 'Pending');
+
+-- Booking_detail
+INSERT INTO Booking_detail (booking_id, room_id, price_at_booking, sub_total, status) VALUES
+(1, 1, 300000, 600000, 'Booked'),
+(2, 2, 300000, 300000, 'Booked');

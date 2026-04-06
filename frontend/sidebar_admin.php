@@ -4,7 +4,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 <aside class="w-64 bg-slate-900 h-screen sticky top-0 text-white p-6 shadow-xl flex flex-col">
     <div class="flex items-center gap-3 mb-10">
         <i class="fa-solid fa-user-shield text-indigo-400 text-2xl"></i>
-        <span class="font-bold text-lg tracking-wider uppercase">Grand Admin</span>
+        <span class="font-bold text-lg tracking-wider uppercase">Administrator</span>
     </div>
     
 
