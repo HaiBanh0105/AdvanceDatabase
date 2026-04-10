@@ -8,6 +8,7 @@ BEGIN
 END
 GO
 
+
 CREATE DATABASE hotel_management_db;
 GO
 USE hotel_management_db;
