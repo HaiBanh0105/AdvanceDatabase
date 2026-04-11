@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- Giao diện Đăng nhập -->
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -43,6 +44,7 @@
                 <div>
                     <div class="flex justify-between mb-2 ml-1">
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest">Mật khẩu</label>
+                        <a href="reset_password.php" class="text-xs font-bold text-indigo-600 hover:underline">Quên mật khẩu?</a>
                     </div>
                     <div class="relative">
                         <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>

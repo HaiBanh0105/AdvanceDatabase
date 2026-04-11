@@ -13,13 +13,11 @@ function pdo_get_connection($db_name)
     static $connections = [];
 
     if (!isset($connections[$db_name])) {
-        // SQL Server thường dùng dấu phẩy để chỉ định Port nếu không dùng Port mặc định 1433
-        $host = 'localhost'; 
-        $username = ''; // Để trống nếu dùng Windows Authentication, hoặc điền 'sa'
-        $password = ''; // Mật khẩu của tài khoản SQL Server
+        $host = 'localhost\\SQLEXPRESS';
+        $username = 'sa';
+        $password = '123456';
 
-        // THAY ĐỔI: Cấu trúc DSN của SQL Server khác hoàn toàn MySQL
-        $dburl = "sqlsrv:Server={$host};Database={$db_name}";
+        $dburl = "sqlsrv:Server={$host};Database={$db_name};TrustServerCertificate=true";
 
         try {
             $conn = new PDO($dburl, $username, $password);
@@ -33,7 +31,8 @@ function pdo_get_connection($db_name)
             $connections[$db_name] = $conn;
         } catch (PDOException $e) {
             error_log("Database Connection Error to SQL Server ({$db_name}): " . $e->getMessage());
-            throw new Exception("Không thể kết nối đến SQL Server. Vui lòng kiểm tra Driver và SSMS.");
+            // In ra chi tiết mã lỗi từ PDO để dễ dàng chẩn đoán
+            throw new Exception("Lỗi kết nối: " . $e->getMessage());
         }
     }
 

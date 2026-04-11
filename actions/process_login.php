@@ -9,14 +9,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $email = trim($_POST['email'] ?? '');
     $password = trim($_POST['password'] ?? '');
 
-    $user = user_check_login($email, $password); // Hàm bạn đã viết trong DAO 
+    $user = user_check_login($email, $password); 
 
     if ($user) {
-        // Lưu thông tin vào Session 
         $_SESSION['user_id'] = $user['user_id'];
         $_SESSION['role'] = $user['role'];
-        $_SESSION['full_name'] = $user['full_name'];
-        $_SESSION['balance'] = $user['balance'];
+        $_SESSION['full_name'] = $user['full_name'] ?? 'Khách';
+        $_SESSION['balance'] = $user['balance'] ?? 0;
 
         echo json_encode([
             'status' => 'success',

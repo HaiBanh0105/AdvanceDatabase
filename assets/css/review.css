@@ -1,0 +1,6 @@
+.star-rating { display: flex; flex-direction: row-reverse; justify-content: flex-end; gap: 4px; }
+.star-rating input { display: none; }
+.star-rating label { cursor: pointer; color: #cbd5e1; font-size: 1.75rem; transition: color 0.2s; }
+.star-rating input:checked ~ label { color: #facc15; }
+.star-rating label:hover,
+.star-rating label:hover ~ label { color: #facc15 !important; }

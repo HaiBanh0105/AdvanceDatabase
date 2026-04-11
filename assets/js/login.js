@@ -1,3 +1,4 @@
+/** File xử lý Giao diện Đăng nhập */
 document.addEventListener("DOMContentLoaded", function () {
   // Gọi các phần tử HTML cho tính năng ẩn/hiện
   const passwordInput = document.getElementById("password");
@@ -19,7 +20,6 @@ document.addEventListener("DOMContentLoaded", function () {
     // Giữ focus vào ô input sau khi click
     passwordInput.focus();
   });
-  // 1. "Gọi" các phần tử HTML cần thiết
   const loginForm = document.getElementById("loginForm");
   const alertBox = document.getElementById("alertBox");
   const alertMessage = document.getElementById("alertMessage");

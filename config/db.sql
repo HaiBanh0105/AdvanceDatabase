@@ -20,7 +20,8 @@ CREATE TABLE [User] (
     email NVARCHAR(255) NOT NULL UNIQUE,   -- NVARCHAR để hỗ trợ Unicode
     phone VARCHAR(20),
     password NVARCHAR(255) NOT NULL,
-    role NVARCHAR(50) DEFAULT 'Customer'
+    role NVARCHAR(50) DEFAULT 'Customer',
+    created_at DATETIME DEFAULT GETDATE()
 );
 
 -- 2. Bảng User_detail: Chi tiết tài khoản
@@ -52,7 +53,8 @@ CREATE TABLE Bank_account (
 CREATE TABLE Room_types (
     type_id INT IDENTITY(1,1) PRIMARY KEY,
     name NVARCHAR(255) NOT NULL,
-    price DECIMAL(15, 2),
+    price_per_hour DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    price_per_day DECIMAL(15, 2) NOT NULL DEFAULT 0,
     capacity INT,
     description NVARCHAR(MAX), -- NVARCHAR(MAX) thay cho TEXT
     image NVARCHAR(500)
@@ -71,6 +73,7 @@ CREATE TABLE Room (
 -- 6. Bảng Booking: Thông tin đặt phòng
 CREATE TABLE Booking (
     booking_id INT IDENTITY(1,1) PRIMARY KEY,
+    rental_type VARCHAR(20) DEFAULT 'daily', -- 'hourly' hoặc 'daily'
     user_id INT,
     booking_date DATETIME DEFAULT GETDATE(), -- GETDATE() thay cho CURRENT_TIMESTAMP
     check_in DATETIME,
@@ -79,6 +82,7 @@ CREATE TABLE Booking (
     payment_method NVARCHAR(100),
     payment_status NVARCHAR(50),
     note NVARCHAR(MAX),
+
     status NVARCHAR(50),
     FOREIGN KEY (user_id) REFERENCES [User](user_id) ON DELETE CASCADE
 );
@@ -94,6 +98,20 @@ CREATE TABLE Booking_detail (
     FOREIGN KEY (booking_id) REFERENCES Booking(booking_id) ON DELETE CASCADE,
     FOREIGN KEY (room_id) REFERENCES Room(room_id)
 );
+
+-- 8. Bảng Booking_guests: Danh sách khách lưu trú thực tế trong từng phòng
+CREATE TABLE Booking_guests (
+    guest_id INT IDENTITY(1,1) PRIMARY KEY,
+    booking_id INT,              
+    detail_id INT,             
+    full_name NVARCHAR(255) NOT NULL,     
+    cccd VARCHAR(50) NOT NULL,                               
+    phone VARCHAR(20),
+    is_representative BIT DEFAULT 0, 
+    
+    FOREIGN KEY (booking_id) REFERENCES Booking(booking_id) ON DELETE CASCADE,
+    FOREIGN KEY (detail_id) REFERENCES Booking_detail(detail_id)
+);
 GO
 
 -- CHÈN DỮ LIỆU MẪU
@@ -107,3 +125,8 @@ INSERT INTO User_detail (user_id, full_name, dob, address, nation, ID_number, ba
 (2, N'Võ Tấn Bền (Khách)', '1995-05-20', N'456 Đường Python, Đà Nẵng', N'Việt Nam', '001095654321', 10500000.00, N'active'),
 (3, N'Nguyễn Văn Lợi', '1998-10-15', N'789 Đường SQL, Hà Nội', N'Việt Nam', '001098111222', 5450000.00, N'active');
 GO
+
+--Cập nhật dữ liệu mẫu cho Room_types (Nếu bạn chạy từ đầu)
+INSERT INTO Room_types (name, price_per_hour, price_per_day, capacity, description) VALUES 
+(N'Phòng Standard', 100000, 500000, 2, N'Tiêu chuẩn'),
+(N'Phòng VIP', 200000, 1000000, 2, N'Có bồn tắm');
