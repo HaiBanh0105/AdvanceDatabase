@@ -21,10 +21,10 @@ function booking_find_available_room($type_id, $check_in, $check_out)
     return db_query_one($sql, $type_id, $check_out, $check_in);
 }
 
-function booking_create_customer($customer_id, $check_in, $check_out, $total_price, $room_id, $price, $rental_type = 'daily')
+function booking_create_customer($customer_id, $check_in, $check_out, $total_price, $room_id, $price, $rental_type = 'daily', $extra_guests = [])
 {
     $conn = pdo_get_connection(DB_NAME);
-    $is_nested = $conn->inTransaction(); 
+    $is_nested = $conn->inTransaction();
     try {
         if (!$is_nested) {
             $conn->beginTransaction();
@@ -42,6 +42,23 @@ function booking_create_customer($customer_id, $check_in, $check_out, $total_pri
         $sql3 = "INSERT INTO Booking_guests (detail_id, customer_id, is_representative) VALUES (?, ?, 1)";
         $conn->prepare($sql3)->execute([$detail_id, $customer_id]);
 
+        // Thêm thông tin những khách đi cùng (nếu có)
+        if (!empty($extra_guests)) {
+            $stmt_guest = $conn->prepare("INSERT INTO Booking_guests (detail_id, customer_id, is_representative) VALUES (?, ?, 0)");
+            foreach ($extra_guests as $g) {
+                $g_name = trim($g['name'] ?? '');
+                $g_cccd = trim($g['cccd'] ?? '');
+                if ($g_name === '' || $g_cccd === '') continue;
+
+                $g_id = db_query_value("SELECT customer_id FROM Customer WHERE cccd = ?", $g_cccd);
+                if (!$g_id) {
+                    db_execute("INSERT INTO Customer (full_name, cccd) VALUES (?, ?)", $g_name, $g_cccd);
+                    $g_id = db_query_value("SELECT customer_id FROM Customer WHERE cccd = ?", $g_cccd);
+                }
+                $stmt_guest->execute([$detail_id, $g_id]);
+            }
+        }
+
         if (!$is_nested) {
             $conn->commit();
         }
@@ -51,7 +68,7 @@ function booking_create_customer($customer_id, $check_in, $check_out, $total_pri
             $conn->rollBack();
         }
         error_log('booking_create_customer error: ' . $e->getMessage());
-        if ($is_nested) throw $e; 
+        if ($is_nested) throw $e;
         return false;
     }
 }
@@ -92,7 +109,7 @@ function booking_create_admin_walkin($employee_id, $room_id, $check_in, $check_o
             $name = trim($g['name'] ?? '');
             $cccd = trim($g['cccd'] ?? '');
             if ($name === '' || $cccd === '') continue;
-            
+
             $g_id = db_query_value("SELECT customer_id FROM Customer WHERE cccd = ?", $cccd);
             if (!$g_id) {
                 db_execute("INSERT INTO Customer (full_name, cccd) VALUES (?, ?)", $name, $cccd);
@@ -124,7 +141,7 @@ function booking_update_status($booking_id, $status)
     // Chuyển checked_in thành checked-in để tương thích Schema
     $db_status = str_replace('_', '-', $status);
     db_execute("UPDATE Booking SET booking_status = ? WHERE booking_id = ?", $db_status, $booking_id);
-    
+
     // Cập nhật trạng thái phòng khi Lễ tân duyệt đơn Check-in hoặc Hủy
     $room_id = db_query_value("SELECT room_id FROM Booking_detail WHERE booking_id = ?", $booking_id);
     if ($room_id) {
@@ -134,7 +151,7 @@ function booking_update_status($booking_id, $status)
             db_execute("UPDATE Room SET status = 'available' WHERE room_id = ?", $room_id);
         }
     }
-    
+
     return true;
 }
 
@@ -142,25 +159,52 @@ function booking_get_all_admin($search = '')
 {
     if ($search !== '') {
         $term = "%{$search}%";
-        $sql = "SELECT b.booking_id, b.check_in_planned as check_in, b.check_out_planned as check_out, b.booking_status as status, b.total_price, c.full_name as guest_name, c.phone as guest_phone, c.cccd as guest_cccd, r.room_number, rt.name as type_name
+        $sql = "SELECT b.booking_id, bd.detail_id, b.check_in_planned as check_in, b.check_out_planned as check_out, b.booking_status as status, b.total_price, c.full_name as guest_name, c.phone as guest_phone, c.cccd as guest_cccd, r.room_number, rt.name as type_name
                 FROM Booking b
                 JOIN Customer c ON b.customer_id = c.customer_id
                 JOIN Booking_detail bd ON b.booking_id = bd.booking_id
                 JOIN Room r ON bd.room_id = r.room_id
                 JOIN Room_types rt ON r.type_id = rt.type_id
                 WHERE CAST(b.booking_id AS NVARCHAR) LIKE ? OR c.full_name LIKE ? OR c.cccd LIKE ? OR r.room_number LIKE ?
+                OR EXISTS (
+                    SELECT 1 FROM Booking_guests bg2 
+                    JOIN Customer c3 ON bg2.customer_id = c3.customer_id 
+                    WHERE bg2.detail_id = bd.detail_id AND (c3.full_name LIKE ? OR c3.cccd LIKE ?)
+                )
                 ORDER BY b.booking_id DESC";
-        return db_query($sql, $term, $term, $term, $term);
+        $bookings = db_query($sql, $term, $term, $term, $term, $term, $term);
     } else {
-        $sql = "SELECT b.booking_id, b.check_in_planned as check_in, b.check_out_planned as check_out, b.booking_status as status, b.total_price, c.full_name as guest_name, c.phone as guest_phone, c.cccd as guest_cccd, r.room_number, rt.name as type_name
+        $sql = "SELECT b.booking_id, bd.detail_id, b.check_in_planned as check_in, b.check_out_planned as check_out, b.booking_status as status, b.total_price, c.full_name as guest_name, c.phone as guest_phone, c.cccd as guest_cccd, r.room_number, rt.name as type_name
                 FROM Booking b
                 JOIN Customer c ON b.customer_id = c.customer_id
                 JOIN Booking_detail bd ON b.booking_id = bd.booking_id
                 JOIN Room r ON bd.room_id = r.room_id
                 JOIN Room_types rt ON r.type_id = rt.type_id
                 ORDER BY b.booking_id DESC";
-        return db_query($sql);
+        $bookings = db_query($sql);
     }
+
+    if ($bookings) {
+        $detail_ids = array_column($bookings, 'detail_id');
+        if (!empty($detail_ids)) {
+            $placeholders = implode(',', array_fill(0, count($detail_ids), '?'));
+            $sql_guests = "SELECT bg.detail_id, c.full_name, c.cccd FROM Booking_guests bg JOIN Customer c ON bg.customer_id = c.customer_id WHERE bg.is_representative = 0 AND bg.detail_id IN ($placeholders)";
+            $extra_guests_raw = db_query($sql_guests, ...$detail_ids);
+
+            $guests_map = [];
+            if ($extra_guests_raw) {
+                foreach ($extra_guests_raw as $eg) {
+                    $guests_map[$eg['detail_id']][] = $eg['full_name'] . ' (' . $eg['cccd'] . ')';
+                }
+            }
+
+            foreach ($bookings as &$b) {
+                $b['extra_guests_info'] = isset($guests_map[$b['detail_id']]) ? implode('<br>', $guests_map[$b['detail_id']]) : '';
+            }
+        }
+    }
+
+    return $bookings;
 }
 
 function booking_get_active()
@@ -176,11 +220,10 @@ function booking_get_active()
 
 function booking_get_guest_by_cccd($cccd)
 {
-    $sql2 = "SELECT TOP 1 full_name FROM Customer WHERE cccd = ? ORDER BY customer_id DESC";
+    $sql2 = "SELECT TOP 1 * FROM Customer WHERE cccd = ? ORDER BY customer_id DESC";
     $guest = db_query_one($sql2, $cccd);
-    if ($guest) return $guest['full_name'];
 
-    return false;
+    return $guest ?: false;
 }
 
 function booking_get_details_for_checkout($booking_id)
@@ -240,7 +283,7 @@ function booking_process_checkout($booking_id, $actual_checkout)
         $actual_checkout,
         $booking_id
     );
-    
+
     // Cập nhật trạng thái phòng sang 'cleaning' sau khi khách trả phòng
     $room_id = db_query_value("SELECT room_id FROM Booking_detail WHERE booking_id = ?", $booking_id);
     if ($room_id) {

@@ -46,6 +46,11 @@ foreach ($all_rooms as $r) {
     $grouped_rooms[$r['type_name']][] = $r;
 }
 
+$type_capacity_map = [];
+foreach ($room_types as $rt) {
+    $type_capacity_map[$rt['name']] = $rt['capacity'];
+}
+
 // Xác định tab mặc định
 $default_tab = ($search !== '') ? 'listTab' : 'mapTab';
 ?>
@@ -96,11 +101,13 @@ $default_tab = ($search !== '') ? 'listTab' : 'mapTab';
         <!-- TAB 1 -->
         <div id="mapTab" class="tab-content hidden">
 
-            <div class="flex items-center gap-6 mb-6 text-sm font-medium text-slate-600">
+            <div class="flex flex-wrap items-center gap-4 md:gap-6 mb-6 text-sm font-medium text-slate-600">
                 <span class="flex items-center gap-2"><span
                         class="w-5 h-5 rounded-md bg-emerald-500 inline-block"></span> Phòng trống</span>
                 <span class="flex items-center gap-2"><span class="w-5 h-5 rounded-md bg-red-500 inline-block"></span>
                     Đang có khách</span>
+                <span class="flex items-center gap-2"><span class="w-5 h-5 rounded-md bg-amber-400 inline-block"></span>
+                    Dọn dẹp</span>
                 <span class="flex items-center gap-2"><span class="w-5 h-5 rounded-md bg-slate-300 inline-block"></span>
                     Bảo trì</span>
             </div>
@@ -108,8 +115,8 @@ $default_tab = ($search !== '') ? 'listTab' : 'mapTab';
             <?php foreach ($grouped_rooms as $type_name => $rooms): ?>
             <?php
                 $total = count($rooms);
-                $occupied = count(array_filter($rooms, fn($r) => isset($active_map[$r['room_id']])));
-                $free = $total - $occupied;
+                $occupied = count(array_filter($rooms, fn($r) => isset($active_map[$r['room_id']]) || ($r['room_status'] ?? $r['status'] ?? '') === 'occupied'));
+                $free = count(array_filter($rooms, fn($r) => !isset($active_map[$r['room_id']]) && ($r['room_status'] ?? $r['status'] ?? '') === 'available'));
                 ?>
 
             <div class="bg-white rounded-2xl shadow-sm border border-slate-100 mb-6 overflow-hidden">
@@ -133,7 +140,7 @@ $default_tab = ($search !== '') ? 'listTab' : 'mapTab';
                             $rnum = $room['room_number'];
                             $p_hr = $room['price_per_hour'] ?? 0;
                             $p_day = $room['price_per_day'] ?? 0;
-                            $capacity = $room['capacity'] ?? 2;
+                            $capacity = $room['capacity'] ?? $type_capacity_map[$type_name] ?? 2;
                             $occupied_info = $active_map[$rid] ?? null;
                             ?>
 
@@ -153,7 +160,24 @@ $default_tab = ($search !== '') ? 'listTab' : 'mapTab';
                         <span><?= $rnum ?></span>
                         <i class="fa-solid fa-person-shelter text-xs opacity-80"></i>
                     </button>
-                    <?php elseif ($room['room_status'] === 'maintenance'): ?>
+                    <?php elseif (($room['room_status'] ?? $room['status'] ?? '') === 'occupied'): ?>
+                    <div title="Đang có khách (Chưa ghi nhận trên hệ thống)"
+                        class="room-occupied w-16 h-16 bg-red-500 text-white font-bold text-sm rounded-xl flex flex-col items-center justify-center gap-0.5 shadow-md cursor-not-allowed">
+                        <span><?= $rnum ?></span>
+                        <i class="fa-solid fa-person-shelter text-xs opacity-80"></i>
+                    </div>
+                    <?php elseif (($room['room_status'] ?? $room['status'] ?? '') === 'cleaning'): ?>
+                    <form action="../actions/process_admin_booking.php" method="POST" class="inline"
+                        onsubmit="return confirm('Xác nhận phòng đã sẵn sàng hoạt động?');">
+                        <input type="hidden" name="action" value="mark_room_ready">
+                        <input type="hidden" name="room_id" value="<?= $rid ?>">
+                        <button type="submit" title="Đang dọn dẹp. Click để chuyển sang Sẵn sàng"
+                            class="w-16 h-16 bg-amber-400 hover:bg-amber-500 text-white font-bold text-sm rounded-xl flex flex-col items-center justify-center gap-0.5 shadow-md transition cursor-pointer">
+                            <span><?= $rnum ?></span>
+                            <i class="fa-solid fa-broom text-xs"></i>
+                        </button>
+                    </form>
+                    <?php elseif (($room['room_status'] ?? $room['status'] ?? '') === 'maintenance'): ?>
                     <div title="Đang bảo trì"
                         class="w-16 h-16 bg-slate-200 text-slate-400 font-bold text-sm rounded-xl flex flex-col items-center justify-center gap-0.5 cursor-not-allowed">
                         <span><?= $rnum ?></span>
@@ -184,7 +208,8 @@ $default_tab = ($search !== '') ? 'listTab' : 'mapTab';
                 </div>
                 <div class="relative flex-1 w-full md:max-w-xs">
                     <i class="fa-solid fa-id-card absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
-                    <input id="searchCCCD" type="text" value="<?= htmlspecialchars($search) ?>" oninput="filterBookings()" placeholder="Tìm số CCCD..."
+                    <input id="searchCCCD" type="text" value="<?= htmlspecialchars($search) ?>"
+                        oninput="filterBookings()" placeholder="Tìm số CCCD..."
                         class="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-400 outline-none transition shadow-sm">
                 </div>
             </div>
@@ -224,6 +249,14 @@ $default_tab = ($search !== '') ? 'listTab' : 'mapTab';
                                 <p class="text-xs text-slate-400">
                                     CCCD: <?= htmlspecialchars($b['user_cccd'] ?? $b['guest_cccd']) ?>
                                 </p>
+                                <?php if (!empty($b['extra_guests_info'])): ?>
+                                <div class="mt-2 pt-2 border-t border-slate-100">
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase">Khách đi cùng:</p>
+                                    <p class="text-[11px] text-indigo-600 font-medium">
+                                        <?= $b['extra_guests_info'] ?>
+                                    </p>
+                                </div>
+                                <?php endif; ?>
                             </td>
                             <td class="px-6 py-4">
                                 <p class="font-bold text-slate-800"><?= htmlspecialchars($b['room_number'] ?? '') ?>
@@ -322,268 +355,32 @@ $default_tab = ($search !== '') ? 'listTab' : 'mapTab';
     </main>
 
     <!-- MODAL WALKIN (ĐẶT TRỰC TIẾP) -->
-    <div id="walkinModal"
-        class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-        <div
-            class="bg-white rounded-[2.5rem] w-full max-w-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in duration-200">
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                <h3 class="font-bold text-lg text-slate-800 uppercase tracking-tight">Đăng ký Lưu trú — Phòng <span
-                        id="wi_room_number" class="text-indigo-600"></span></h3>
-                <button onclick="toggleModal('walkinModal')" class="text-slate-400 hover:text-slate-600"><i
-                        class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            <form action="../actions/process_admin_booking.php" method="POST" class="p-8 space-y-6 overflow-y-auto"
-                onsubmit="return validateWalkinForm(event)">
-                <input type="hidden" name="action" value="create_walkin">
-                <input type="hidden" name="room_id" id="wi_room_id">
-
-                <div class="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 grid grid-cols-2 gap-4">
-                    <div class="col-span-2">
-                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Hình
-                            thức thuê</label>
-                        <div class="flex gap-4">
-                            <label
-                                class="flex-1 flex items-center gap-2 p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-indigo-500 transition">
-                                <input type="radio" name="rental_type" value="hourly" checked
-                                    class="text-indigo-600 focus:ring-indigo-500" onchange="updateCalc()">
-                                <span class="text-sm font-bold text-slate-700">Theo giờ <span id="wi_price_hr"
-                                        class="text-xs font-normal text-slate-400 block"></span></span>
-                            </label>
-                            <label
-                                class="flex-1 flex items-center gap-2 p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-indigo-500 transition">
-                                <input type="radio" name="rental_type" value="daily"
-                                    class="text-indigo-600 focus:ring-indigo-500" onchange="updateCalc()">
-                                <span class="text-sm font-bold text-slate-700">Theo ngày <span id="wi_price_day"
-                                        class="text-xs font-normal text-slate-400 block"></span></span>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="col-span-2">
-                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Số
-                            điện thoại liên hệ (Đại diện)</label>
-                        <input type="tel" name="guest_phone"
-                            class="w-full px-5 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition"
-                            placeholder="Nhập SĐT để nhận hóa đơn...">
-                    </div>
-                    <div class="col-span-2">
-                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Thời
-                            gian lưu trú (Giờ / Ngày)</label>
-                        <input type="number" name="duration" id="wi_duration" min="1" value="1" required
-                            class="w-full px-5 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition"
-                            oninput="updateCalc()">
-                    </div>
-                    <div
-                        class="col-span-2 bg-white p-4 rounded-xl border border-dashed border-indigo-200 text-sm text-indigo-800">
-                        <p><i class="fa-regular fa-clock mr-1"></i> Giờ nhận phòng: <b id="wi_calc_in">Lập tức</b>
-                        </p>
-                        <p class="mt-1"><i class="fa-solid fa-person-walking-luggage mr-1"></i> Giờ trả dự kiến: <b
-                                id="wi_calc_out">...</b></p>
-                        <p class="mt-1"><i class="fa-solid fa-money-bill-wave mr-1"></i> Tạm tính: <b id="wi_calc_price"
-                                class="text-lg">0đ</b></p>
-                    </div>
-                </div>
-
-                <div>
-                    <div class="flex justify-between items-center mb-3">
-                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Khách
-                            lưu
-                            trú</label>
-                        <button type="button" onclick="addGuestRow()"
-                            class="text-xs font-bold text-indigo-600 hover:underline"><i
-                                class="fa-solid fa-plus mr-1"></i>Thêm khách</button>
-                    </div>
-                    <div id="guestList" class="space-y-3"></div>
-                </div>
-
-                <button type="submit"
-                    class="w-full px-4 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition">
-                    <i class="fa-solid fa-key mr-2"></i>Xác nhận Giao Phòng
-                </button>
-            </form>
-        </div>
-    </div>
+    <?php
+    include 'Modals/walkin_modal.php';
+    ?>
 
     <!-- MODAL XEM THÔNG TIN ĐƠN (CHECK-OUT) -->
-    <div id="viewBookingModal"
-        class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-        <div
-            class="bg-white rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in duration-200">
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-rose-50">
-                <h3 class="font-bold text-lg text-rose-800 uppercase tracking-tight"><i
-                        class="fa-solid fa-bed mr-2"></i>Chi tiết đang lưu trú</h3>
-                <button onclick="toggleModal('viewBookingModal')" class="text-slate-400 hover:text-slate-600"><i
-                        class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            <div class="p-8 space-y-4 text-sm relative">
-                <div id="v_loader" class="absolute inset-0 bg-white/80 flex items-center justify-center hidden z-10">
-                    <i class="fa-solid fa-circle-notch fa-spin text-3xl text-indigo-600"></i>
-                </div>
-
-                <div class="flex justify-between items-center pb-4 border-b border-slate-100">
-                    <span class="text-[10px] font-black text-slate-400 uppercase">Mã Đơn</span>
-                    <span class="font-black text-indigo-600" id="v_booking_id"></span>
-                </div>
-                <div class="flex justify-between items-center pb-4 border-b border-slate-100">
-                    <span class="text-[10px] font-black text-slate-400 uppercase">Phòng</span>
-                    <span class="font-bold text-slate-800" id="v_room"></span>
-                </div>
-                <div class="flex justify-between items-center pb-4 border-b border-slate-100">
-                    <span class="text-[10px] font-black text-slate-400 uppercase">Ngày nhận (IN)</span>
-                    <span class="font-medium text-slate-600" id="v_checkin"></span>
-                </div>
-                <div class="flex justify-between items-center pb-4 border-b border-slate-100">
-                    <span class="text-[10px] font-black text-slate-400 uppercase">Ngày trả (OUT)</span>
-                    <span class="font-medium text-slate-600" id="v_checkout"></span>
-                </div>
-                <div class="flex justify-between items-center pb-2">
-                    <span class="text-[10px] font-black text-slate-400 uppercase">Tạm tính (Dự kiến)</span>
-                    <span class="font-black text-lg text-emerald-600" id="v_price"></span>
-                </div>
-
-                <button onclick="proceedToCheckout()"
-                    class="w-full mt-4 px-4 py-4 bg-emerald-500 text-white rounded-2xl font-bold shadow-lg shadow-emerald-200 hover:bg-emerald-600 transition">
-                    <i class="fa-solid fa-money-bill-wave mr-2"></i>Thanh toán & Trả phòng
-                </button>
-            </div>
-        </div>
-    </div>
+    <?php
+    include 'Modals/viewBooking_modal.php';
+    ?>
 
     <!-- MODAL THANH TOÁN HOÀN TẤT -->
-    <div id="checkoutModal"
-        class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[60] hidden items-center justify-center p-4">
-        <div
-            class="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in duration-200">
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-emerald-50">
-                <h3 class="font-bold text-lg text-emerald-800 uppercase tracking-tight">Hóa Đơn Thanh Toán</h3>
-                <button onclick="toggleModal('checkoutModal')" class="text-slate-400 hover:text-slate-600"><i
-                        class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            <form action="../actions/process_admin_booking.php" method="POST" class="p-8 space-y-4 text-sm">
-                <input type="hidden" name="action" value="checkout">
-                <input type="hidden" name="booking_id" id="co_booking_id">
-                <input type="hidden" name="total_paid" id="co_total_paid">
-
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4">
-                    <p class="text-xs text-slate-500 mb-1">Khách hàng đại diện</p>
-                    <p class="font-bold text-slate-800 text-base" id="co_customer"></p>
-                </div>
-
-                <div class="flex justify-between items-center pb-3 border-b border-dashed border-slate-200">
-                    <span class="text-slate-500">Giờ vào thực tế</span>
-                    <span class="font-bold text-slate-800" id="co_in"></span>
-                </div>
-                <div class="flex justify-between items-center pb-3 border-b border-dashed border-slate-200">
-                    <span class="text-slate-500">Giờ ra thực tế</span>
-                    <span class="font-bold text-slate-800" id="co_out"></span>
-                </div>
-                <div class="flex justify-between items-center pt-2">
-                    <span class="text-slate-500">Tiền phòng (Dự kiến)</span>
-                    <span class="font-bold text-slate-800" id="co_base_price"></span>
-                </div>
-                <div id="co_overtime_box" class="flex justify-between items-center text-rose-600 hidden">
-                    <span>Phụ thu lố giờ (<span id="co_overtime_hrs"></span> tiếng)</span>
-                    <span class="font-bold" id="co_overtime_fee"></span>
-                </div>
-
-                <div class="flex justify-between items-center pt-4 border-t border-slate-200 mt-4">
-                    <span class="text-xs font-black text-slate-400 uppercase">TỔNG THANH TOÁN</span>
-                    <span class="text-3xl font-black text-indigo-600" id="co_final_total"></span>
-                </div>
-
-                <button type="submit"
-                    class="w-full mt-6 px-4 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition">
-                    <i class="fa-solid fa-check-double mr-2"></i>Xác nhận Đã Thu Tiền
-                </button>
-            </form>
-        </div>
-    </div>
+    <?php
+    include 'Modals/checkout_modal.php';
+    ?>
 
     <!-- MODAL XEM CHI TIẾT ĐƠN / HÓA ĐƠN -->
-    <div id="invoiceModal"
-        class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[70] hidden items-center justify-center p-4">
-        <div
-            class="bg-white rounded-[2.5rem] w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in duration-200 flex flex-col max-h-[90vh]">
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-indigo-50">
-                <h3 class="font-bold text-lg text-indigo-800 uppercase tracking-tight"><i
-                        class="fa-solid fa-file-invoice mr-2"></i>Chi tiết Đơn Đặt Phòng</h3>
-                <button onclick="toggleModal('invoiceModal')" class="text-slate-400 hover:text-slate-600"><i
-                        class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            <div class="p-8 overflow-y-auto text-sm space-y-6 relative">
-                <div id="inv_loader" class="absolute inset-0 bg-white/80 flex items-center justify-center hidden z-10">
-                    <i class="fa-solid fa-circle-notch fa-spin text-3xl text-indigo-600"></i>
-                </div>
-                <div class="grid grid-cols-2 gap-6 bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                    <div>
-                        <p class="text-[10px] font-black text-slate-400 uppercase mb-1">Mã Đơn</p>
-                        <p class="font-black text-indigo-600 text-lg" id="inv_id"></p>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-[10px] font-black text-slate-400 uppercase mb-1">Trạng thái</p>
-                        <p class="font-bold text-slate-800" id="inv_status"></p>
-                    </div>
-                </div>
-
-                <!-- BỔ SUNG CHI TIẾT THANH TOÁN -->
-                <div>
-                    <h4 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Thông tin Lưu trú &
-                        Thanh toán</h4>
-                    <div class="bg-white border border-slate-200 rounded-xl p-5 space-y-3">
-                        <div class="flex justify-between items-center border-b border-dashed border-slate-200 pb-2">
-                            <span class="text-slate-500">Giờ nhận phòng (IN)</span>
-                            <span class="font-bold text-slate-800" id="inv_in"></span>
-                        </div>
-                        <div class="flex justify-between items-center border-b border-dashed border-slate-200 pb-2">
-                            <span class="text-slate-500">Giờ trả phòng (OUT)</span>
-                            <span class="font-bold text-slate-800" id="inv_out"></span>
-                        </div>
-                        <div class="flex justify-between items-center border-b border-dashed border-slate-200 pb-2">
-                            <span class="text-slate-500" id="inv_base_price_label">Tiền phòng dự kiến</span>
-                            <span class="font-bold text-slate-800" id="inv_base_price"></span>
-                        </div>
-                        <div class="flex justify-between items-center border-b border-dashed border-slate-200 pb-2">
-                            <span class="text-slate-500">Phụ thu phát sinh <span id="inv_overtime_note"
-                                    class="text-[10px] text-slate-400 font-normal"></span></span>
-                            <span class="font-bold text-rose-600" id="inv_overtime_fee"></span>
-                        </div>
-                        <div class="flex justify-between items-center border-b border-dashed border-slate-200 pb-2">
-                            <span class="text-slate-500">Trạng thái thanh toán</span>
-                            <span class="font-bold uppercase text-[10px] px-2 py-1 rounded"
-                                id="inv_payment_status"></span>
-                        </div>
-                        <div class="flex justify-between items-center pt-2">
-                            <span class="text-xs font-black text-slate-400 uppercase tracking-widest">TỔNG CỘNG</span>
-                            <span class="text-2xl font-black text-indigo-600" id="inv_total"></span>
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    <h4 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Danh sách Khách lưu trú
-                    </h4>
-                    <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
-                        <table class="w-full text-left">
-                            <thead class="bg-slate-50 border-b border-slate-100">
-                                <tr class="text-[10px] text-slate-500 uppercase tracking-wider font-bold">
-                                    <th class="px-4 py-2">Họ Tên</th>
-                                    <th class="px-4 py-2">CCCD</th>
-                                    <th class="px-4 py-2 text-center">Vai trò</th>
-                                </tr>
-                            </thead>
-                            <tbody id="inv_guests" class="divide-y divide-slate-100"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <?php
+    include 'Modals/invoice_modal.php';
+    ?>
 
     <script src="../assets/js/toast.js"></script>
     <script src="../assets/js/admin_bookings.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         const urlParams = new URLSearchParams(window.location.search);
-        let activeTab = urlParams.get('search') ? 'listTab' : (sessionStorage.getItem('adminBookingCurrentTab') || '<?php echo $default_tab; ?>');
+        let activeTab = urlParams.get('search') ? 'listTab' : (sessionStorage.getItem(
+            'adminBookingCurrentTab') || '<?php echo $default_tab; ?>');
 
         const btnMap = document.getElementById('btn-mapTab');
         const btnList = document.getElementById('btn-listTab');
@@ -599,6 +396,9 @@ $default_tab = ($search !== '') ? 'listTab' : 'mapTab';
 
         if (urlParams.get('msg') === 'booking_created') showToast('Giao phòng thành công!', 'success');
         if (urlParams.get('msg') === 'checkout_success') showToast('Trả phòng và thu tiền hoàn tất!',
+            'success');
+        if (urlParams.get('msg') === 'status_updated') showToast('Cập nhật trạng thái thành công!', 'success');
+        if (urlParams.get('msg') === 'room_ready') showToast('Phòng đã dọn dẹp xong và sẵn sàng đón khách!',
             'success');
         if (urlParams.get('error') === 'room_occupied') showToast(
             'Lỗi: Phòng này đã bị đặt trong khoảng thời gian vừa chọn!', 'error');

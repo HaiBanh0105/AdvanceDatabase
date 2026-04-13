@@ -116,27 +116,21 @@ GO
 
 -- 1. Thêm nhân viên
 INSERT INTO Employee (username, password, full_name, role) VALUES 
-('admin', '123', N'Nguyễn Công Thành', 'Admin'),
-('reception_linh', 'hash_password_456', N'Trần Thị Linh', 'Receptionist');
+('admin', '123', N'Nguyễn Công Thành', 'Admin');
 
--- 2. Thêm khách hàng (Một người có account online, một người là khách vãng lai)
-INSERT INTO Customer (full_name, cccd, phone, email, nation) VALUES 
-(N'Lĩ Chính Hiền', '001095654326', '0797494692', 'lichinhhien@gmail.com', N'Việt Nam'),  
-(N'Võ Đạt Hải', '001090123456', '0772663776', 'vodathai@gmail.com', N'Việt Nam'), 
-(N'Võ Tấn Bền', '001095654321', '0987654321', NULL, N'Việt Nam'),              
-(N'Nguyễn Văn Lợi', '001098111222', '0901234567', NULL, N'Việt Nam');           
+-- 2. Tạo loại phòng (Đa dạng hạng phòng, giá và sức chứa)
+INSERT INTO Room_types (name, price_per_hour, price_per_day, capacity, description) VALUES 
+(N'Standard Single', 100000, 500000, 1, N'Phòng tiêu chuẩn 1 giường đơn dành cho người đi công tác.'),
+(N'Superior Double', 150000, 800000, 2, N'Phòng rộng rãi với 1 giường đôi lớn, view thành phố.'),
+(N'Deluxe Ocean View', 250000, 1500000, 2, N'Phòng sang trọng hướng biển, ban công riêng và bồn tắm.'),
+(N'Family Suite', 350000, 2500000, 4, N'Phòng gia đình 2 phòng ngủ liên thông, không gian sinh hoạt chung.'),
+(N'Presidential Suite', 500000, 5000000, 4, N'Phòng Tổng thống cao cấp nhất, nội thất dát vàng, dịch vụ quản gia.');
 
--- 3. Tạo tài khoản cho khách đặt Online
-INSERT INTO Account (customer_id, email, password) VALUES 
-(1, 'lichinhhien@gmail.com', '123');
-
--- 4. Tạo loại phòng và phòng
-INSERT INTO Room_types (name, price_per_day, capacity) VALUES 
-(N'Standard King', 500000, 2),
-(N'VIP Suite', 1200000, 2);
-
+-- 3. Tạo danh sách phòng vật lý (Toàn bộ trạng thái là Sẵn sàng - available)
 INSERT INTO Room (room_number, type_id, status) VALUES 
-('101', 1, 'occupied'),
-('102', 1, 'available'),
-('501', 2, 'occupied');
+('101', 1, 'available'), ('102', 1, 'available'), ('103', 1, 'available'), ('104', 1, 'available'),
+('201', 2, 'available'), ('202', 2, 'available'), ('203', 2, 'available'), ('204', 2, 'available'),
+('301', 3, 'available'), ('302', 3, 'available'), ('303', 3, 'available'),
+('401', 4, 'available'), ('402', 4, 'available'),
+('501', 5, 'available');
 GO

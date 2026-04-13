@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         foreach ($guests as $i => $g) {
             $name = trim($g['name'] ?? '');
             $cccd = trim($g['cccd'] ?? '');
-            
+
             // Bỏ qua nếu dòng này hoàn toàn rỗng (JS gửi dư)
             if ($name === '' && $cccd === '') continue;
 
@@ -83,7 +83,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
             $cccd_list[] = $cccd;
 
-            $existing_name = booking_get_guest_by_cccd($cccd);
+            $existing_guest = booking_get_guest_by_cccd($cccd);
+            $existing_name = $existing_guest ? $existing_guest['full_name'] : false;
             if ($existing_name && mb_strtolower($existing_name, 'UTF-8') !== mb_strtolower($name, 'UTF-8')) {
                 header("Location: ../frontend/admin_bookings.php?error=cccd_name_mismatch");
                 exit();
@@ -114,6 +115,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
 
         header("Location: ../frontend/admin_bookings.php?msg=checkout_success");
+        exit();
+    } elseif ($action === 'mark_room_ready') {
+        $room_id = (int)$_POST['room_id'];
+        db_execute("UPDATE Room SET status = 'available' WHERE room_id = ?", $room_id);
+        header("Location: ../frontend/admin_bookings.php?msg=room_ready");
         exit();
     }
 } elseif ($_SERVER['REQUEST_METHOD'] == 'GET') {
@@ -169,11 +175,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     } elseif ($action === 'check_cccd') {
         ob_start();
         $cccd = trim($_GET['cccd'] ?? '');
-        $name = booking_get_guest_by_cccd($cccd);
+        $guest = booking_get_guest_by_cccd($cccd);
         ob_end_clean();
         header('Content-Type: application/json');
-        if ($name) {
-            echo json_encode(['status' => 'found', 'name' => $name]);
+        if ($guest) {
+            echo json_encode([
+                'status' => 'found',
+                'name' => $guest['full_name'],
+                'phone' => $guest['phone'],
+                'email' => $guest['email'],
+                'address' => $guest['address'],
+                'nation' => $guest['nation']
+            ]);
         } else {
             echo json_encode(['status' => 'not_found']);
         }

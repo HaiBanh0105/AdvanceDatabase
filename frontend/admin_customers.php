@@ -42,7 +42,6 @@ if ($search_cccd !== '') {
         <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
                 <h1 class="text-2xl font-bold text-slate-800">Quản lý Khách hàng</h1>
-                <p class="text-slate-500 text-sm">Phê duyệt và chỉnh sửa thông tin khách hàng.</p>
             </div>
 
             <form action="" method="GET" class="flex items-center">
@@ -77,16 +76,18 @@ if ($search_cccd !== '') {
                             <p class="font-bold text-slate-700">
                                 <?php echo htmlspecialchars($c['full_name']); ?></p>
                             <?php if (empty($c['account_id'])): ?>
-                                <p class="text-[10px] text-slate-400 uppercase font-bold mt-1">Khách vãng lai</p>
+                            <p class="text-[10px] text-slate-400 uppercase font-bold mt-1">Khách vãng lai</p>
                             <?php endif; ?>
                         </td>
                         <td class="px-6 py-4">
                             <?php if (!empty($c['account_id'])): ?>
-                            <p class="text-slate-600">Email: <?php echo htmlspecialchars($c['email'] ?: 'Chưa cập nhật email'); ?></p>
-                            <p class="text-slate-600">SDT: <?php echo htmlspecialchars($c['phone'] ?: 'Chưa cập nhật SDT'); ?></p>
-                            <p class="text-slate-600">Địa chỉ: <?php echo htmlspecialchars($c['address'] ?: 'Chưa cập nhật địa chỉ'); ?></p>
+                            <p class="text-slate-600">Email:
+                                <?php echo htmlspecialchars($c['email']); ?></p>
+                            <p class="text-slate-600">SDT:
+                                <?php echo htmlspecialchars($c['phone']); ?></p>
+                            <p class="text-slate-600">Địa chỉ:
+                                <?php echo htmlspecialchars($c['address']); ?></p>
                             <?php else: ?>
-                                <span class="text-slate-300">-</span>
                             <?php endif; ?>
                         </td>
                         <td class="px-6 py-4">
@@ -94,7 +95,7 @@ if ($search_cccd !== '') {
                                 <?php echo htmlspecialchars($c['ID_number'] ?: 'Trống'); ?></p>
                         </td>
                         <td class="px-6 py-4 font-bold text-indigo-600">
-                            <?php echo !empty($c['account_id']) ? '0 đ' : '<span class="text-slate-300">-</span>'; ?>
+                            <?php echo !empty($c['account_id']) ? '0 đ' : '<span class="text-slate-300"></span>'; ?>
                         </td>
                         <td class="px-6 py-4 text-slate-500">
                             <span class="text-xs font-medium">
@@ -103,7 +104,7 @@ if ($search_cccd !== '') {
                         </td>
                         <td class="px-6 py-4">
                             <?php if (empty($c['account_id'])): ?>
-                                <span class="text-slate-300">-</span>
+                            <span class="text-slate-300"></span>
                             <?php elseif (empty($c['ID_number'])): ?>
                             <span
                                 class="bg-red-100 text-red-600 px-2 py-1 rounded text-[10px] font-bold uppercase whitespace-nowrap">Chưa
@@ -119,28 +120,28 @@ if ($search_cccd !== '') {
                             <?php endif; ?>
                         </td>
                         <td class="px-6 py-4 text-right space-x-2">
+                            <?php if (!empty($c['account_id'])): ?>
+                            <?php if ($c['account_status'] === 'active'): ?>
                             <a href="admin_bookings.php?search=<?php echo urlencode($c['ID_number'] ?: $c['full_name']); ?>"
                                 class="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-bold hover:bg-slate-200 transition inline-block mb-1">
                                 <i class="fa-solid fa-clock-rotate-left mr-1"></i> Xem lịch sử đặt phòng
                             </a>
-                            <?php if (!empty($c['account_id'])): ?>
-                                <?php if ($c['account_status'] === 'active'): ?>
-                                <button
-                                    onclick="openDepositModal(<?php echo $c['account_id']; ?>, '<?php echo htmlspecialchars($c['full_name']); ?>')"
-                                    class="bg-indigo-100 text-indigo-600 px-3 py-1.5 rounded-lg text-[10px] font-bold hover:bg-indigo-200 transition mb-1">
-                                    Nạp tiền
+                            <button
+                                onclick="openDepositModal(<?php echo $c['account_id']; ?>, '<?php echo htmlspecialchars($c['full_name']); ?>')"
+                                class="bg-indigo-100 text-indigo-600 px-3 py-1.5 rounded-lg text-[10px] font-bold hover:bg-indigo-200 transition mb-1">
+                                Nạp tiền
+                            </button>
+                            <?php elseif (!empty($c['ID_number'])): ?>
+                            <form action="../actions/process_approve_customer.php" method="POST" class="inline">
+                                <input type="hidden" name="user_id" value="<?php echo $c['account_id']; ?>">
+                                <button type="submit" onclick="return confirm('Xác nhận duyệt tài khoản này?');"
+                                    class="bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold hover:bg-emerald-600 transition mb-1">
+                                    Duyệt ngay
                                 </button>
-                                <?php elseif (!empty($c['ID_number'])): ?>
-                                <form action="../actions/process_approve_customer.php" method="POST" class="inline">
-                                    <input type="hidden" name="user_id" value="<?php echo $c['account_id']; ?>">
-                                    <button type="submit" onclick="return confirm('Xác nhận duyệt tài khoản này?');"
-                                        class="bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold hover:bg-emerald-600 transition mb-1">
-                                        Duyệt ngay
-                                    </button>
-                                </form>
-                                <?php else: ?>
-                                <span class="text-slate-400 text-[10px] italic block">Chờ khách cập nhật hồ sơ</span>
-                                <?php endif; ?>
+                            </form>
+                            <?php else: ?>
+                            <span class="text-slate-400 text-[10px] italic block">Chờ khách cập nhật hồ sơ</span>
+                            <?php endif; ?>
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -151,31 +152,9 @@ if ($search_cccd !== '') {
     </main>
 
     <!-- Modal Nạp Tiền -->
-    <div id="depositModal"
-        class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-[2.5rem] w-full max-w-sm shadow-2xl overflow-hidden">
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-                <h3 class="font-bold text-lg text-slate-800">Nạp tiền vào ví</h3>
-                <button onclick="closeDepositModal()" class="text-slate-400 hover:text-slate-600"><i
-                        class="fa-solid fa-xmark"></i></button>
-            </div>
-            <form action="../actions/process_deposit_admin.php" method="POST" class="p-6 space-y-4">
-                <input type="hidden" name="user_id" id="deposit_user_id">
-                <div>
-                    <p class="text-xs font-bold text-slate-400 uppercase mb-1">Khách hàng</p>
-                    <p id="deposit_user_name" class="font-bold text-slate-700 mb-4"></p>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Số tiền nạp (VNĐ)</label>
-                    <input type="number" name="amount" required min="10000" step="10000"
-                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-lg text-indigo-600">
-                </div>
-                <button type="submit"
-                    class="w-full mt-2 bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition">Xác
-                    nhận nạp</button>
-            </form>
-        </div>
-    </div>
+    <?php
+    include 'Modals/deposit_modal.php';
+    ?>
 
     <script src="../assets/js/toast.js"></script>
     <script>
