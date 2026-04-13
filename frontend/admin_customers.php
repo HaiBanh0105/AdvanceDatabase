@@ -10,18 +10,17 @@ $search_cccd = trim($_GET['search_cccd'] ?? '');
 
 // Lấy danh sách khách hàng
 if ($search_cccd !== '') {
-    $sql = "SELECT u.user_id, u.email, u.phone, ud.full_name, ud.ID_number, ud.status, ud.balance, ud.address, u.created_at
-            FROM [User] u 
-            JOIN User_detail ud ON u.user_id = ud.user_id 
-            WHERE u.role = 'Customer' AND ud.ID_number LIKE ?
-            ORDER BY u.user_id DESC";
+    $sql = "SELECT c.customer_id, a.account_id, a.email, c.phone, c.full_name, c.cccd as ID_number, a.status as account_status, c.address, c.created_at
+            FROM Customer c 
+            LEFT JOIN Account a ON c.customer_id = a.customer_id 
+            WHERE c.cccd LIKE ?
+            ORDER BY c.customer_id DESC";
     $customers = db_query($sql, '%' . $search_cccd . '%');
 } else {
-    $sql = "SELECT u.user_id, u.email, u.phone, ud.full_name, ud.ID_number, ud.status, ud.balance, ud.address, u.created_at
-            FROM [User] u 
-            JOIN User_detail ud ON u.user_id = ud.user_id 
-            WHERE u.role = 'Customer'
-            ORDER BY u.user_id DESC";
+    $sql = "SELECT c.customer_id, a.account_id, a.email, c.phone, c.full_name, c.cccd as ID_number, a.status as account_status, c.address, c.created_at
+            FROM Customer c 
+            LEFT JOIN Account a ON c.customer_id = a.customer_id 
+            ORDER BY c.customer_id DESC";
     $customers = db_query($sql);
 }
 ?>
@@ -64,7 +63,7 @@ if ($search_cccd !== '') {
                     <tr class="text-slate-500 text-[10px] uppercase tracking-widest font-bold">
                         <th class="px-6 py-4">Khách hàng</th>
                         <th class="px-6 py-4">Liên hệ</th>
-                        <th class="px-6 py-4">Địa chỉ / CCCD</th>
+                        <th class="px-6 py-4">CCCD</th>
                         <th class="px-6 py-4">Số dư ví</th>
                         <th class="px-6 py-4">Ngày tạo</th>
                         <th class="px-6 py-4">Trạng thái</th>
@@ -76,21 +75,26 @@ if ($search_cccd !== '') {
                     <tr class="hover:bg-slate-50/50 transition">
                         <td class="px-6 py-4">
                             <p class="font-bold text-slate-700">
-                                <?php echo htmlspecialchars($c['full_name'] ?: 'Chưa cập nhật'); ?></p>
+                                <?php echo htmlspecialchars($c['full_name']); ?></p>
+                            <?php if (empty($c['account_id'])): ?>
+                                <p class="text-[10px] text-slate-400 uppercase font-bold mt-1">Khách vãng lai</p>
+                            <?php endif; ?>
                         </td>
                         <td class="px-6 py-4">
-                            <p class="text-slate-600"><?php echo htmlspecialchars($c['email']); ?></p>
-                            <p class="text-[10px] text-slate-400"><?php echo htmlspecialchars($c['phone']); ?></p>
+                            <?php if (!empty($c['account_id'])): ?>
+                            <p class="text-slate-600">Email: <?php echo htmlspecialchars($c['email'] ?: 'Chưa cập nhật email'); ?></p>
+                            <p class="text-slate-600">SDT: <?php echo htmlspecialchars($c['phone'] ?: 'Chưa cập nhật SDT'); ?></p>
+                            <p class="text-slate-600">Địa chỉ: <?php echo htmlspecialchars($c['address'] ?: 'Chưa cập nhật địa chỉ'); ?></p>
+                            <?php else: ?>
+                                <span class="text-slate-300">-</span>
+                            <?php endif; ?>
                         </td>
                         <td class="px-6 py-4">
-                            <p class="text-slate-600 text-xs truncate max-w-[150px]"
-                                title="<?php echo htmlspecialchars($c['address'] ?: 'Chưa cập nhật địa chỉ'); ?>">
-                                <?php echo htmlspecialchars($c['address'] ?: 'Chưa cập nhật địa chỉ'); ?></p>
-                            <p class="font-mono text-[10px] tracking-wider text-slate-400 mt-1">CCCD:
+                            <p class="font-bold text-slate-700">
                                 <?php echo htmlspecialchars($c['ID_number'] ?: 'Trống'); ?></p>
                         </td>
                         <td class="px-6 py-4 font-bold text-indigo-600">
-                            <?php echo number_format($c['balance'], 0, ',', '.'); ?>đ
+                            <?php echo !empty($c['account_id']) ? '0 đ' : '<span class="text-slate-300">-</span>'; ?>
                         </td>
                         <td class="px-6 py-4 text-slate-500">
                             <span class="text-xs font-medium">
@@ -98,11 +102,13 @@ if ($search_cccd !== '') {
                             </span>
                         </td>
                         <td class="px-6 py-4">
-                            <?php if (empty($c['ID_number'])): ?>
+                            <?php if (empty($c['account_id'])): ?>
+                                <span class="text-slate-300">-</span>
+                            <?php elseif (empty($c['ID_number'])): ?>
                             <span
                                 class="bg-red-100 text-red-600 px-2 py-1 rounded text-[10px] font-bold uppercase whitespace-nowrap">Chưa
                                 cập nhật thông tin</span>
-                            <?php elseif ($c['status'] === 'active'): ?>
+                            <?php elseif ($c['account_status'] === 'active'): ?>
                             <span
                                 class="bg-emerald-100 text-emerald-600 px-2 py-1 rounded text-[10px] font-bold uppercase whitespace-nowrap">Đã
                                 duyệt</span>
@@ -113,26 +119,28 @@ if ($search_cccd !== '') {
                             <?php endif; ?>
                         </td>
                         <td class="px-6 py-4 text-right space-x-2">
-                            <?php if ($c['status'] === 'active'): ?>
-                            <a href="admin_bookings.php?user_id=<?php echo $c['user_id']; ?>"
+                            <a href="admin_bookings.php?search=<?php echo urlencode($c['ID_number'] ?: $c['full_name']); ?>"
                                 class="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-bold hover:bg-slate-200 transition inline-block mb-1">
                                 <i class="fa-solid fa-clock-rotate-left mr-1"></i> Xem lịch sử đặt phòng
                             </a>
-                            <button
-                                onclick="openDepositModal(<?php echo $c['user_id']; ?>, '<?php echo htmlspecialchars($c['full_name']); ?>')"
-                                class="bg-indigo-100 text-indigo-600 px-3 py-1.5 rounded-lg text-[10px] font-bold hover:bg-indigo-200 transition mb-1">
-                                Nạp tiền
-                            </button>
-                            <?php elseif (!empty($c['ID_number'])): ?>
-                            <form action="../actions/process_approve_customer.php" method="POST" class="inline">
-                                <input type="hidden" name="user_id" value="<?php echo $c['user_id']; ?>">
-                                <button type="submit" onclick="return confirm('Xác nhận duyệt tài khoản này?');"
-                                    class="bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold hover:bg-emerald-600 transition mb-1">
-                                    Duyệt ngay
+                            <?php if (!empty($c['account_id'])): ?>
+                                <?php if ($c['account_status'] === 'active'): ?>
+                                <button
+                                    onclick="openDepositModal(<?php echo $c['account_id']; ?>, '<?php echo htmlspecialchars($c['full_name']); ?>')"
+                                    class="bg-indigo-100 text-indigo-600 px-3 py-1.5 rounded-lg text-[10px] font-bold hover:bg-indigo-200 transition mb-1">
+                                    Nạp tiền
                                 </button>
-                            </form>
-                            <?php else: ?>
-                            <span class="text-slate-400 text-[10px] italic">Chờ khách cập nhật hồ sơ</span>
+                                <?php elseif (!empty($c['ID_number'])): ?>
+                                <form action="../actions/process_approve_customer.php" method="POST" class="inline">
+                                    <input type="hidden" name="user_id" value="<?php echo $c['account_id']; ?>">
+                                    <button type="submit" onclick="return confirm('Xác nhận duyệt tài khoản này?');"
+                                        class="bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold hover:bg-emerald-600 transition mb-1">
+                                        Duyệt ngay
+                                    </button>
+                                </form>
+                                <?php else: ?>
+                                <span class="text-slate-400 text-[10px] italic block">Chờ khách cập nhật hồ sơ</span>
+                                <?php endif; ?>
                             <?php endif; ?>
                         </td>
                     </tr>

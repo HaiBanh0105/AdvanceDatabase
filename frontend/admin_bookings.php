@@ -59,24 +59,7 @@ $default_tab = ($search !== '') ? 'listTab' : 'mapTab';
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
-    <style>
-    @keyframes pulse-red {
-
-        0%,
-        100% {
-            box-shadow: 0 0 0 0 rgba(239, 68, 68, .4);
-        }
-
-        50% {
-            box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
-        }
-    }
-
-    .room-occupied {
-        animation: pulse-red 2s ease-in-out infinite;
-    }
-    </style>
+    <link rel="stylesheet" href="../assets/css/admin.css">
 </head>
 
 <body class="bg-slate-50 flex h-screen overflow-hidden">
@@ -97,8 +80,6 @@ $default_tab = ($search !== '') ? 'listTab' : 'mapTab';
         <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded shadow-sm" role="alert">
             <p class="font-bold">Lỗi Cơ sở dữ liệu!</p>
             <p><?php echo htmlspecialchars($error_msg); ?></p>
-            <p class="text-sm mt-2"><i class="fa-solid fa-lightbulb"></i> Gợi ý: Nếu báo lỗi thiếu cột (Invalid column
-                name), bạn cần chạy lại file db.sql mới nhất trong SQL Server.</p>
         </div>
         <?php endif; ?>
 
@@ -203,7 +184,7 @@ $default_tab = ($search !== '') ? 'listTab' : 'mapTab';
                 </div>
                 <div class="relative flex-1 w-full md:max-w-xs">
                     <i class="fa-solid fa-id-card absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
-                    <input id="searchCCCD" type="text" oninput="filterBookings()" placeholder="Tìm số CCCD..."
+                    <input id="searchCCCD" type="text" value="<?= htmlspecialchars($search) ?>" oninput="filterBookings()" placeholder="Tìm số CCCD..."
                         class="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-400 outline-none transition shadow-sm">
                 </div>
             </div>
@@ -270,7 +251,7 @@ $default_tab = ($search !== '') ? 'listTab' : 'mapTab';
                                 <span
                                     class="px-2 py-1 rounded text-[10px] font-bold bg-blue-100 text-blue-600 uppercase">Đã
                                     xác nhận</span>
-                                <?php elseif ($b['status'] == 'checked_in'): ?>
+                                <?php elseif ($b['status'] == 'checked-in'): ?>
                                 <span
                                     class="px-2 py-1 rounded text-[10px] font-bold bg-indigo-100 text-indigo-600 uppercase">Đang
                                     ở</span>
@@ -310,7 +291,7 @@ $default_tab = ($search !== '') ? 'listTab' : 'mapTab';
                                         class="bg-red-50 text-red-600 px-3 py-1.5 rounded-lg text-[10px] uppercase font-bold hover:bg-red-100 transition shadow-sm"
                                         title="Hủy đơn"><i class="fa-solid fa-xmark"></i> Hủy</button>
                                 </form>
-                                <?php elseif ($b['status'] == 'checked_in'): ?>
+                                <?php elseif ($b['status'] == 'checked-in'): ?>
                                 <?php
                                         $data_js = htmlspecialchars(json_encode([
                                             'booking_id' => $b['booking_id'],
@@ -601,7 +582,8 @@ $default_tab = ($search !== '') ? 'listTab' : 'mapTab';
     <script src="../assets/js/admin_bookings.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', () => {
-        let activeTab = sessionStorage.getItem('adminBookingCurrentTab') || '<?php echo $default_tab; ?>';
+        const urlParams = new URLSearchParams(window.location.search);
+        let activeTab = urlParams.get('search') ? 'listTab' : (sessionStorage.getItem('adminBookingCurrentTab') || '<?php echo $default_tab; ?>');
 
         const btnMap = document.getElementById('btn-mapTab');
         const btnList = document.getElementById('btn-listTab');
@@ -615,7 +597,6 @@ $default_tab = ($search !== '') ? 'listTab' : 'mapTab';
         btnMap.addEventListener('click', () => sessionStorage.setItem('adminBookingCurrentTab', 'mapTab'));
         btnList.addEventListener('click', () => sessionStorage.setItem('adminBookingCurrentTab', 'listTab'));
 
-        const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('msg') === 'booking_created') showToast('Giao phòng thành công!', 'success');
         if (urlParams.get('msg') === 'checkout_success') showToast('Trả phòng và thu tiền hoàn tất!',
             'success');
@@ -627,6 +608,12 @@ $default_tab = ($search !== '') ? 'listTab' : 'mapTab';
             'Lỗi: CCCD đã tồn tại trong hệ thống nhưng sai tên Khách hàng!', 'error');
         if (urlParams.get('error') === 'duplicate_phone') showToast(
             'Lỗi: Số điện thoại này đã được sử dụng bởi khách hàng khác!', 'error');
+        if (urlParams.get('error') === 'missing_cccd') showToast(
+            'Lỗi: Bắt buộc phải nhập cả Tên và số CCCD cho tất cả khách hàng!', 'error');
+        if (urlParams.get('error') === 'missing_guest') showToast(
+            'Lỗi: Vui lòng nhập thông tin của ít nhất 1 khách hàng!', 'error');
+        if (urlParams.get('error') === 'booking_failed') showToast(
+            'Lỗi: Giao phòng thất bại do lỗi CSDL, vui lòng thử lại!', 'error');
     });
     </script>
 

@@ -187,7 +187,25 @@ $promotions = $db->promotions->find($filter, ['sort' => ['created_at' => -1]])->
         </div>
     </div>
 
+    <script src="../assets/js/toast.js"></script>
     <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            let hasParams = false;
+            
+            if (urlParams.get('error') === 'invalid_date') {
+                showToast('Lỗi: Ngày hết hạn không được nhỏ hơn thời gian hiện tại!', 'error');
+                hasParams = true;
+            } else if (urlParams.get('msg') === 'success') {
+                showToast('Thao tác thành công!', 'success');
+                hasParams = true;
+            }
+            
+            if (hasParams) {
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        });
+
         function openAddModal() { document.getElementById('addPromoModal').classList.remove('hidden'); }
         function closeAddModal() { document.getElementById('addPromoModal').classList.add('hidden'); }
         

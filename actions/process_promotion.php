@@ -17,6 +17,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $quantity = (int)($_POST['quantity'] ?? 0);
         $expires_at = $_POST['expires_at'] ?? '';
         
+        // Kiểm tra hợp lệ: Ngày hết hạn không được bé hơn hiện tại
+        if (!empty($expires_at) && strtotime($expires_at) < time()) {
+            header("Location: ../frontend/admin_promotions.php?error=invalid_date");
+            exit();
+        }
+
         // Chuyển đổi thời gian sang chuẩn của MongoDB
         $expires_mongo = !empty($expires_at) ? new MongoDB\BSON\UTCDateTime(strtotime($expires_at) * 1000) : new MongoDB\BSON\UTCDateTime();
 
@@ -31,6 +37,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $description = trim($_POST['description']);
         $quantity = (int)($_POST['quantity'] ?? 0);
         $expires_at = $_POST['expires_at'] ?? '';
+
+        // Kiểm tra hợp lệ: Ngày hết hạn không được bé hơn hiện tại
+        if (!empty($expires_at) && strtotime($expires_at) < time()) {
+            header("Location: ../frontend/admin_promotions.php?error=invalid_date");
+            exit();
+        }
+        
         $expires_mongo = !empty($expires_at) ? new MongoDB\BSON\UTCDateTime(strtotime($expires_at) * 1000) : new MongoDB\BSON\UTCDateTime();
 
         if (!empty($id) && !empty($code) && $discount > 0) {
@@ -44,6 +57,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    header("Location: ../frontend/admin_promotions.php");
+    header("Location: ../frontend/admin_promotions.php?msg=success");
     exit();
 }

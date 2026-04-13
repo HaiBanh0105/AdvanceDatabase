@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if ($action === 'add') {
         $room_number = trim($_POST['room_number'] ?? '');
         $type_id = (int)($_POST['type_id'] ?? 0);
-        $status = trim($_POST['status'] ?? 'active');
+        $status = trim($_POST['status'] ?? 'available');
 
         if (!empty($room_number) && $type_id > 0) {
             if (room_check_number_exists($room_number)) {
@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $room_id = (int)($_POST['room_id'] ?? 0);
         $room_number = trim($_POST['room_number'] ?? '');
         $type_id = (int)($_POST['type_id'] ?? 0);
-        $status = trim($_POST['status'] ?? 'active');
+        $status = trim($_POST['status'] ?? 'available');
 
         if ($room_id > 0 && !empty($room_number)) {
             if (room_check_number_exists($room_number, $room_id)) {

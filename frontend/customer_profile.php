@@ -11,12 +11,12 @@ require_once '../dao/DAO.php';
 $user_id = $_SESSION['user_id'];
 
 // 1. Lấy thông tin cá nhân và số dư
-$sql_profile = "SELECT u.email, u.phone, ud.full_name, ud.dob, ud.ID_number, ud.nation, ud.address, ud.balance, ud.status
-                FROM [User] u LEFT JOIN User_detail ud ON u.user_id = ud.user_id WHERE u.user_id = ?";
+$sql_profile = "SELECT a.email, c.phone, c.full_name, c.cccd as ID_number, c.nation, c.address, a.status
+                FROM Account a JOIN Customer c ON a.customer_id = c.customer_id WHERE a.account_id = ?";
 $profile = db_query_one($sql_profile, $user_id);
 
 // 2. Lấy thông tin tài khoản ngân hàng (nếu có)
-$sql_bank = "SELECT provider, card_id, expiry_date, cardholder_name FROM Bank_account WHERE user_id = ?";
+$sql_bank = "SELECT provider, card_id, expiry_date, cardholder_name FROM Bank_account WHERE account_id = ?";
 $bank = db_query_one($sql_bank, $user_id);
 ?>
 <!DOCTYPE html>
@@ -103,7 +103,7 @@ $bank = db_query_one($sql_bank, $user_id);
                         <?php if (empty($profile['ID_number'])): ?>
                         <span
                             class="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-[10px] font-bold uppercase border border-slate-200"
-                            title="Vui lòng cập nhật số CCCD để gửi yêu cầu phê duyệt">Chưa yêu cầu phê duyệt</span>
+                            title="Vui lòng cập nhật số CCCD để gửi yêu cầu phê duyệt">Chưa phê duyệt</span>
                         <?php elseif (isset($profile['status']) && $profile['status'] === 'active'): ?>
                         <span
                             class="px-3 py-1 bg-emerald-100 text-emerald-600 rounded-full text-[10px] font-bold uppercase">Đã

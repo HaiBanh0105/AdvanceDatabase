@@ -55,7 +55,8 @@ $rooms = room_get_all_details();
                 </select>
                 <select id="filterRoomStatus" class="px-4 py-2 border border-slate-200 rounded-lg focus:outline-none text-slate-600">
                     <option value="">Tất cả trạng thái</option>
-                    <option value="active">Đang hoạt động (Active)</option>
+                    <option value="available">Sẵn sàng (Available)</option>
+                    <option value="occupied">Có khách (Occupied)</option>
                     <option value="maintenance">Bảo trì (Maintenance)</option>
                 </select>
             </div>
@@ -88,8 +89,14 @@ $rooms = room_get_all_details();
                                     <td class="px-6 py-4 font-bold text-slate-700"><?php echo htmlspecialchars($room['room_number']); ?></td>
                                     <td class="px-6 py-4 text-slate-600"><?php echo htmlspecialchars($room['type_name'] ?? 'Không xác định'); ?></td>
                                     <td class="px-6 py-4">
-                                        <?php if ($room['status'] === 'active'): ?>
-                                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-600">ACTIVE</span>
+                                        <?php if ($room['status'] === 'available'): ?>
+                                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-600 uppercase">Available</span>
+                                        <?php elseif ($room['status'] === 'cleaning'): ?>
+                                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-600 uppercase">Cleaning</span>
+                                        <?php elseif ($room['status'] === 'maintenance'): ?>
+                                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 uppercase">Maintenance</span>
+                                        <?php elseif ($room['status'] === 'occupied'): ?>
+                                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-red-100 text-red-600 uppercase">Occupied</span>
                                         <?php else: ?>
                                             <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-600 uppercase"><?php echo htmlspecialchars($room['status']); ?></span>
                                         <?php endif; ?>
@@ -197,8 +204,10 @@ $rooms = room_get_all_details();
                 <div>
                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Trạng thái khởi tạo</label>
                     <select name="status" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
-                        <option value="active">Đang hoạt động (Active)</option>
+                        <option value="available">Sẵn sàng (Available)</option>
                         <option value="maintenance">Bảo trì (Maintenance)</option>
+                        <option value="cleaning">Dọn dẹp (Cleaning)</option>
+                        <option value="occupied">Có khách (Occupied)</option>
                     </select>
                 </div>
                 <div class="pt-4 flex gap-3">
@@ -234,7 +243,7 @@ $rooms = room_get_all_details();
                 <div>
                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Trạng thái</label>
                     <select name="status" id="edit_room_status" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
-                        <option value="active">Đang hoạt động (Active)</option>
+                        <option value="available">Sẵn sàng (Available)</option>
                         <option value="maintenance">Bảo trì (Maintenance)</option>
                     </select>
                 </div>

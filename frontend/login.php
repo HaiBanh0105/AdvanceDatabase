@@ -35,7 +35,7 @@
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Email</label>
                     <div class="relative">
                         <i class="fa-solid fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                        <input type="email" id="email" name="email" required
+                        <input id="email" name="email" required
                                class="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
                                placeholder="name@example.com">
                     </div>

@@ -226,11 +226,12 @@ function openInvoiceModal(bookingId) {
             }
             
             document.getElementById('inv_id').innerText = '#BK-' + String(data.booking_id).padStart(4, '0');
-            
+
             // Render Trạng thái và Thanh toán
             let statusVi = '';
             let payStatus = '';
             let payColor = '';
+
             if (data.status === 'completed') {
                 statusVi = 'Đã hoàn thành';
                 payStatus = 'Đã thanh toán';
@@ -239,14 +240,22 @@ function openInvoiceModal(bookingId) {
                 statusVi = 'Đã hủy';
                 payStatus = 'Đã hủy';
                 payColor = 'bg-red-100 text-red-600';
-            } else if (data.status === 'checked_in') {
+            } else if (data.status === 'checked-in') {
                 statusVi = 'Đang lưu trú';
                 payStatus = 'Chưa thanh toán';
                 payColor = 'bg-amber-100 text-amber-600';
-            } else {
-                statusVi = 'Chờ nhận phòng';
+            } else if (data.status === 'confirmed') {
+                statusVi = 'Đã xác nhận';
+                payStatus = 'Chưa thanh toán';
+                payColor = 'bg-blue-100 text-blue-600';
+            } else if (data.status === 'pending') {
+                statusVi = 'Chờ xác nhận';
                 payStatus = 'Chưa thanh toán';
                 payColor = 'bg-slate-100 text-slate-600';
+            } else {
+                statusVi = 'Không xác định';
+                payStatus = 'Không xác định';
+                payColor = 'bg-gray-100 text-gray-600';
             }
             
             document.getElementById('inv_status').innerText = statusVi.toUpperCase();

@@ -3,28 +3,24 @@
 require_once('DAO.php');
 
 function user_check_email_exists($email) {
-    $sql = "SELECT user_id FROM [User] WHERE email = ?";
+    $sql = "SELECT account_id FROM Account WHERE email = ?";
     return db_query_one($sql, $email);
 }
 
 function user_register($email, $phone, $password, $full_name) {
     try {
-        // Lấy đối tượng kết nối PDO trực tiếp để dùng Transaction và lastInsertId
         $conn = pdo_get_connection(DB_NAME); 
         $conn->beginTransaction();
 
-        // 1. Thêm vào bảng User (role mặc định là Customer)
-        $sql1 = "INSERT INTO [User] (email, phone, password, role) VALUES (?, ?, ?, 'Customer')";
+        $sql1 = "INSERT INTO Customer (full_name, phone, email) VALUES (?, ?, ?)";
         $stmt1 = $conn->prepare($sql1);
-        $stmt1->execute([$email, $phone, $password]);
+        $stmt1->execute([$full_name, $phone, $email]);
         
-        // 2. Lấy ID vừa tạo
-        $user_id = $conn->lastInsertId();
+        $customer_id = $conn->lastInsertId();
 
-        // 3. Thêm vào bảng User_detail
-        $sql2 = "INSERT INTO User_detail (user_id, full_name, status, balance) VALUES (?, ?, 'pending', 0.00)";
+        $sql2 = "INSERT INTO Account (customer_id, email, password, status) VALUES (?, ?, ?, 'Inactive')";
         $stmt2 = $conn->prepare($sql2);
-        $stmt2->execute([$user_id, $full_name]);
+        $stmt2->execute([$customer_id, $email, $password]);
 
         $conn->commit();
         return true;
@@ -39,12 +35,12 @@ function user_register($email, $phone, $password, $full_name) {
 }
 
 function user_get_password($email) {
-    $sql = "SELECT password FROM [User] WHERE email = ?";
+    $sql = "SELECT password FROM Account WHERE email = ?";
     return db_query_value($sql, $email);
 }
 
 function user_update_password($email, $new_password) {
-    $sql = "UPDATE [User] SET password = ? WHERE email = ?";
+    $sql = "UPDATE Account SET password = ? WHERE email = ?";
     return db_execute($sql, $new_password, $email);
 }
 ?>

@@ -12,7 +12,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $user_id  = $_SESSION['user_id'];
 
     // Kiểm tra tài khoản đã được phê duyệt (active) chưa trước khi cho phép đặt phòng
-    $user_status = db_query_value("SELECT status FROM User_detail WHERE user_id = ?", $user_id);
+    $user_status = db_query_value("SELECT status FROM Account WHERE account_id = ?", $user_id);
+    $customer_id = db_query_value("SELECT customer_id FROM Account WHERE account_id = ?", $user_id);
+
     if ($user_status !== 'active') {
         echo json_encode(['status' => 'warning', 'message' => 'Tài khoản chưa được phê duyệt. Vui lòng cập nhật hồ sơ và chờ Admin duyệt!']);
         exit();
@@ -46,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $total_price = $available_room['price_per_day'] * $nights;
 
         $booking_id = booking_create_customer(
-            $user_id,
+            $customer_id,
             $check_in,
             $check_out,
             $total_price,

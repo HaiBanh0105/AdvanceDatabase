@@ -67,7 +67,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         foreach ($guests as $i => $g) {
             $name = trim($g['name'] ?? '');
             $cccd = trim($g['cccd'] ?? '');
-            if ($name === '' || $cccd === '') continue;
+            
+            // Bỏ qua nếu dòng này hoàn toàn rỗng (JS gửi dư)
+            if ($name === '' && $cccd === '') continue;
+
+            // Nếu có nhập Tên nhưng thiếu CCCD (hoặc ngược lại) -> Báo lỗi
+            if ($name === '' || $cccd === '') {
+                header("Location: ../frontend/admin_bookings.php?error=missing_cccd");
+                exit();
+            }
 
             if (in_array($cccd, $cccd_list)) {
                 header("Location: ../frontend/admin_bookings.php?error=duplicate_cccd");
@@ -82,8 +90,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
         }
 
-        booking_create_admin_walkin($room_id, $rental_type, $check_in, $check_out, $base_price, $unit_price, $guests, $rep_index, $guest_phone);
-        header("Location: ../frontend/admin_bookings.php?msg=booking_created");
+        if (empty($cccd_list)) {
+            header("Location: ../frontend/admin_bookings.php?error=missing_guest");
+            exit();
+        }
+
+        $ok = booking_create_admin_walkin($_SESSION['user_id'], $room_id, $check_in, $check_out, $base_price, $unit_price, $guests, $rep_index, $guest_phone);
+        if ($ok) {
+            header("Location: ../frontend/admin_bookings.php?msg=booking_created");
+        } else {
+            header("Location: ../frontend/admin_bookings.php?error=booking_failed");
+        }
         exit();
     } elseif ($action === 'checkout') {
         $booking_id     = (int)$_POST['booking_id'];

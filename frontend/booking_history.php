@@ -6,16 +6,20 @@ if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit();
 }
-require_once '../dao/DAO.php';
+require_once '../dao/room_dao.php';
 
 $user_id = $_SESSION['user_id'];
 
+// Lấy dữ liệu ảnh từ MongoDB
+$mongo_images = room_image_get_all();
+
 // Lấy tất cả đơn đặt phòng của User hiện tại kèm thông tin phòng đại diện (lấy phòng đầu tiên trong đơn)
-$sql = "SELECT b.booking_id, b.booking_date, b.check_in, b.check_out, b.total_price, b.payment_method, b.status,
+$sql = "SELECT b.booking_id, b.booking_date, b.check_in_planned as check_in, b.check_out_planned as check_out, b.total_price, 'Pay at Hotel' as payment_method, b.booking_status as status,
             (SELECT TOP 1 rt.name FROM Booking_detail bd JOIN Room r ON bd.room_id = r.room_id JOIN Room_types rt ON r.type_id = rt.type_id WHERE bd.booking_id = b.booking_id) as room_name,
-            (SELECT TOP 1 rt.image FROM Booking_detail bd JOIN Room r ON bd.room_id = r.room_id JOIN Room_types rt ON r.type_id = rt.type_id WHERE bd.booking_id = b.booking_id) as room_image
+            (SELECT TOP 1 rt.type_id FROM Booking_detail bd JOIN Room r ON bd.room_id = r.room_id JOIN Room_types rt ON r.type_id = rt.type_id WHERE bd.booking_id = b.booking_id) as type_id
         FROM Booking b 
-        WHERE b.user_id = ? 
+        JOIN Account a ON b.customer_id = a.customer_id
+        WHERE a.account_id = ? 
         ORDER BY b.booking_date DESC";
 $bookings = db_query($sql, $user_id);
 ?>
@@ -64,8 +68,13 @@ $bookings = db_query($sql, $user_id);
             <div class="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden hover:shadow-md transition <?php echo $is_cancelled ? 'opacity-75 grayscale-[0.5]' : ''; ?>">
                 <div class="p-6 md:p-8 flex flex-col md:flex-row gap-6 items-center">
                     <div class="w-full md:w-48 h-32 rounded-2xl bg-slate-100 overflow-hidden shrink-0">
-                        <?php $img = $b['room_image'] ? '../assets/images/' . $b['room_image'] : 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=400'; ?>
-                        <img src="<?php echo htmlspecialchars($img); ?>" class="w-full h-full object-cover">
+                        <?php 
+                            $img = 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=400'; 
+                            if (!empty($b['type_id']) && isset($mongo_images[$b['type_id']])) {
+                                $img = "data:" . $mongo_images[$b['type_id']]['mime'] . ";base64," . $mongo_images[$b['type_id']]['base64'];
+                            }
+                        ?>
+                        <img src="<?php echo $img; ?>" class="w-full h-full object-cover">
                     </div>
 
                     <div class="flex-1 space-y-2 text-center md:text-left">
