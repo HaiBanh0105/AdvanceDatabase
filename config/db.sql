@@ -23,19 +23,24 @@ CREATE TABLE Customer (
     phone VARCHAR(20),
     email NVARCHAR(255),
     address NVARCHAR(500),
-    nation NVARCHAR(100) DEFAULT N'Việt Nam',
+    nation NVARCHAR(100) DEFAULT N'Việt Nam'v,
     created_at DATETIME DEFAULT GETDATE()
 );
 
 -- 2. Bảng Account: Tài khoản dùng để đăng nhập Web/App (Chỉ khách online mới có)
 CREATE TABLE Account (
     account_id INT IDENTITY(1,1) PRIMARY KEY,
-    customer_id INT NOT NULL, 
+    customer_id INT NULL, 
     email NVARCHAR(100) UNIQUE,
     password NVARCHAR(255) NOT NULL,
     status NVARCHAR(50) DEFAULT 'active',
     FOREIGN KEY (customer_id) REFERENCES Customer(customer_id) ON DELETE CASCADE
 );
+
+CREATE UNIQUE NONCLUSTERED INDEX UQ_Account_CustomerID 
+ON Account(customer_id) 
+WHERE customer_id IS NOT NULL;
+GO
 
 CREATE TABLE Bank_account (
     card_id VARCHAR(50) PRIMARY KEY,

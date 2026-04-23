@@ -3,6 +3,7 @@ session_start();
 require_once '../config/pdo.php';
 require_once '../dao/auth_dao.php';
 require_once '../config/mail_config.php';
+require_once '../dao/DAO.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
@@ -18,10 +19,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     try {
         if ($action == 'send_otp') {
-            $full_name = trim($_POST['full_name'] ?? '');
             $email = trim($_POST['email'] ?? '');
-            $phone = trim($_POST['phone'] ?? '');
             $password = trim($_POST['password'] ?? '');
+            $confirm_password = trim($_POST['confirm_password'] ?? '');
 
             // Kiểm tra email đã tồn tại chưa
             if (user_check_email_exists($email)) {
@@ -29,13 +29,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 exit();
             }
 
+            if ($password !== $confirm_password) {
+                echo json_encode(['status' => 'error', 'message' => 'Mật khẩu xác nhận không khớp!']);
+                exit();
+            }
+
             // Tạo OTP 6 số ngẫu nhiên
             $otp = rand(100000, 999999);
             $_SESSION['reg_otp'] = $otp;
             $_SESSION['reg_data'] = [
-                'full_name' => $full_name,
                 'email' => $email,
-                'phone' => $phone,
                 // Mã hóa mật khẩu ngay từ bước này để bảo mật thông tin trong Session
                 'password' => password_hash($password, PASSWORD_DEFAULT)
             ];
@@ -57,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                 $mail->isHTML(true);
                 $mail->Subject = 'Mã OTP xác nhận đăng ký tài khoản';
-                $mail->Body    = "Xin chào $full_name,<br><br>Mã xác nhận OTP để hoàn tất đăng ký tài khoản của bạn là: <b style='font-size: 20px; color: #4F46E5;'>$otp</b>.<br><br>Mã này có hiệu lực trong 5 phút. Vui lòng không chia sẻ mã này cho bất kỳ ai.";
+                $mail->Body    = "Xin chào,<br><br>Mã xác nhận OTP để hoàn tất đăng ký tài khoản của bạn là: <b style='font-size: 20px; color: #4F46E5;'>$otp</b>.<br><br>Mã này có hiệu lực trong 5 phút. Vui lòng không chia sẻ mã này cho bất kỳ ai.";
 
                 $mail->send();
                 echo json_encode(['status' => 'success', 'message' => 'Mã OTP đã được gửi đến email! Vui lòng kiểm tra hộp thư.']);
@@ -81,7 +84,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
 
             $data = $_SESSION['reg_data'];
-            if (user_register($data['email'], $data['phone'], $data['password'], $data['full_name'])) {
+            $sql_insert = "INSERT INTO Account (email, password, status) VALUES (?, ?, 'pending')";
+            if (db_execute($sql_insert, $data['email'], $data['password'])) {
                 unset($_SESSION['reg_otp'], $_SESSION['reg_data'], $_SESSION['reg_otp_time']);
                 echo json_encode(['status' => 'success', 'message' => 'Đăng ký thành công! Đang chuyển hướng...']);
             } else {

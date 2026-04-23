@@ -40,16 +40,6 @@
             <form id="step1Form" class="space-y-5" onsubmit="event.preventDefault();">
                 <input type="hidden" name="action" value="send_otp">
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Họ và Tên</label>
-                    <div class="relative">
-                        <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                        <input type="text" name="full_name" required
-                            class="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
-                            placeholder="Họ và tên">
-                    </div>
-                </div>
-
-                <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Email</label>
                     <div class="relative">
                         <i class="fa-solid fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
@@ -60,22 +50,24 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Số điện thoại</label>
-                    <div class="relative">
-                        <i class="fa-solid fa-phone absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                        <input type="tel" name="phone" required
-                            class="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
-                            placeholder="xxxx xxx xxx">
-                    </div>
-                </div>
-
-                <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Mật khẩu</label>
                     <div class="relative">
                         <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                         <input type="password" name="password" required
                             class="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
                             placeholder="••••••••">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Xác nhận mật khẩu</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="password" name="confirm_password" required
+                            class="w-full pl-12 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
+                            placeholder="••••••••">
+                        <span id="confirmPasswordStatus"
+                            class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center justify-center"></span>
                     </div>
                 </div>
 
@@ -112,6 +104,33 @@
     </div>
 
     <script src="../assets/js/register.js?v=<?php echo time(); ?>"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const passwordInput = document.querySelector('input[name="password"]');
+        const confirmPasswordInput = document.querySelector('input[name="confirm_password"]');
+        const statusIcon = document.getElementById('confirmPasswordStatus');
+
+        function validatePasswords() {
+            const password = passwordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+
+            // Don't show anything if the confirm password field is empty
+            if (confirmPassword.length === 0) {
+                statusIcon.innerHTML = '';
+                return;
+            }
+
+            if (password === confirmPassword) {
+                statusIcon.innerHTML = '<i class="fa-solid fa-check text-emerald-500"></i>';
+            } else {
+                statusIcon.innerHTML = '<i class="fa-solid fa-xmark text-red-500"></i>';
+            }
+        }
+
+        confirmPasswordInput.addEventListener('input', validatePasswords);
+        passwordInput.addEventListener('input', validatePasswords);
+    });
+    </script>
 </body>
 
 </html>

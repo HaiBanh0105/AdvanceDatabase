@@ -11,9 +11,17 @@ require_once '../dao/DAO.php';
 $user_id = $_SESSION['user_id'];
 
 // 1. Lấy thông tin cá nhân và số dư
-$sql_profile = "SELECT a.email, c.phone, c.full_name, c.cccd as ID_number, c.nation, c.address, a.status
-                FROM Account a JOIN Customer c ON a.customer_id = c.customer_id WHERE a.account_id = ?";
+$sql_profile = "SELECT a.email, a.status, a.customer_id, c.phone, c.full_name, c.cccd as ID_number, c.nation, c.address
+                FROM Account a 
+                LEFT JOIN Customer c ON a.customer_id = c.customer_id 
+                WHERE a.account_id = ?";
 $profile = db_query_one($sql_profile, $user_id);
+
+// Xử lý hiển thị CCCD khi đang ở trạng thái chờ duyệt nối tài khoản (Bỏ tiền tố REQ_)
+$display_cccd = $profile['ID_number'] ?? '';
+if (strpos($display_cccd, 'REQ_') === 0) {
+    $display_cccd = substr($display_cccd, 4);
+}
 
 // 2. Lấy thông tin tài khoản ngân hàng (nếu có)
 $sql_bank = "SELECT provider, card_id, expiry_date, cardholder_name FROM Bank_account WHERE account_id = ?";
@@ -62,35 +70,35 @@ $bank = db_query_one($sql_bank, $user_id);
                     </h3>
                     <div class="space-y-4">
                         <?php if ($bank): ?>
-                        <!-- Đã liên kết thẻ -->
-                        <div
-                            class="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                            <!-- Đã liên kết thẻ -->
                             <div
-                                class="w-12 h-8 bg-slate-800 rounded flex items-center justify-center text-[10px] text-white font-bold italic">
-                                <?php echo htmlspecialchars(strtoupper($bank['provider'])); ?></div>
-                            <div class="flex-1">
-                                <p class="text-xs font-bold text-slate-700">**** **** ****
-                                    <?php echo htmlspecialchars(substr($bank['card_id'], -4)); ?></p>
-                                <p class="text-[10px] text-slate-400 uppercase">Hết hạn:
-                                    <?php echo date('m/y', strtotime($bank['expiry_date'])); ?></p>
+                                class="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                                <div
+                                    class="w-12 h-8 bg-slate-800 rounded flex items-center justify-center text-[10px] text-white font-bold italic">
+                                    <?php echo htmlspecialchars(strtoupper($bank['provider'])); ?></div>
+                                <div class="flex-1">
+                                    <p class="text-xs font-bold text-slate-700">**** **** ****
+                                        <?php echo htmlspecialchars(substr($bank['card_id'], -4)); ?></p>
+                                    <p class="text-[10px] text-slate-400 uppercase">Hết hạn:
+                                        <?php echo date('m/y', strtotime($bank['expiry_date'])); ?></p>
+                                </div>
+                                <form action="../actions/process_delete_bank.php" method="POST"
+                                    onsubmit="return confirm('Bạn có chắc chắn muốn hủy liên kết thẻ ngân hàng này?');">
+                                    <button type="submit" title="Hủy liên kết"
+                                        class="text-slate-300 hover:text-red-500 transition"><i
+                                            class="fa-solid fa-trash"></i></button>
+                                </form>
                             </div>
-                            <form action="../actions/process_delete_bank.php" method="POST"
-                                onsubmit="return confirm('Bạn có chắc chắn muốn hủy liên kết thẻ ngân hàng này?');">
-                                <button type="submit" title="Hủy liên kết"
-                                    class="text-slate-300 hover:text-red-500 transition"><i
-                                        class="fa-solid fa-trash"></i></button>
-                            </form>
-                        </div>
                         <?php else: ?>
-                        <!-- Chưa có thẻ -->
-                        <div class="text-center p-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                            <i class="fa-solid fa-credit-card text-slate-300 text-3xl mb-3"></i>
-                            <p class="text-xs text-slate-500 mb-4">Bạn chưa liên kết thẻ ngân hàng nào.</p>
-                            <button onclick="toggleModal('linkBankModal')"
-                                class="bg-indigo-100 text-indigo-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-200 transition">
-                                <i class="fa-solid fa-plus mr-1"></i> Liên kết ngay
-                            </button>
-                        </div>
+                            <!-- Chưa có thẻ -->
+                            <div class="text-center p-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                                <i class="fa-solid fa-credit-card text-slate-300 text-3xl mb-3"></i>
+                                <p class="text-xs text-slate-500 mb-4">Bạn chưa liên kết thẻ ngân hàng nào.</p>
+                                <button onclick="toggleModal('linkBankModal')"
+                                    class="bg-indigo-100 text-indigo-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-200 transition">
+                                    <i class="fa-solid fa-plus mr-1"></i> Liên kết ngay
+                                </button>
+                            </div>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -100,17 +108,17 @@ $bank = db_query_one($sql_bank, $user_id);
                 <div class="bg-white rounded-[2.5rem] p-8 md:p-10 border border-slate-100 shadow-sm">
                     <div class="flex justify-between items-center mb-8">
                         <h2 class="text-2xl font-black text-slate-800 tracking-tight">Thông tin cá nhân</h2>
-                        <?php if (empty($profile['ID_number'])): ?>
-                        <span
-                            class="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-[10px] font-bold uppercase border border-slate-200"
-                            title="Vui lòng cập nhật số CCCD để gửi yêu cầu phê duyệt">Chưa phê duyệt</span>
+                        <?php if (empty($profile['customer_id'])): ?>
+                            <span
+                                class="px-3 py-1 bg-rose-100 text-rose-600 rounded-full text-[10px] font-bold uppercase border border-rose-200"
+                                title="Vui lòng cập nhật hồ sơ để sử dụng dịch vụ">Cập nhật hồ sơ</span>
                         <?php elseif (isset($profile['status']) && $profile['status'] === 'active'): ?>
-                        <span
-                            class="px-3 py-1 bg-emerald-100 text-emerald-600 rounded-full text-[10px] font-bold uppercase">Đã
-                            xác thực</span>
+                            <span
+                                class="px-3 py-1 bg-emerald-100 text-emerald-600 rounded-full text-[10px] font-bold uppercase">Đã
+                                xác thực</span>
                         <?php else: ?>
-                        <span class="px-3 py-1 bg-amber-100 text-amber-600 rounded-full text-[10px] font-bold uppercase"
-                            title="Vui lòng chờ Admin duyệt để có thể đặt phòng">Chờ phê duyệt</span>
+                            <span class="px-3 py-1 bg-amber-100 text-amber-600 rounded-full text-[10px] font-bold uppercase"
+                                title="Vui lòng chờ Admin duyệt để có thể đặt phòng">Chờ phê duyệt</span>
                         <?php endif; ?>
                     </div>
 
@@ -148,9 +156,8 @@ $bank = db_query_one($sql_bank, $user_id);
                         <div>
                             <label class="block text-xs font-bold text-slate-400 uppercase mb-2 ml-1">Số
                                 CCCD/Passport</label>
-                            <input type="text" name="id_number"
-                                value="<?php echo htmlspecialchars($profile['ID_number'] ?? ''); ?>" required
-                                pattern="\d{12}" maxlength="12" title="Vui lòng nhập chính xác 12 chữ số"
+                            <input type="text" name="id_number" value="<?php echo htmlspecialchars($display_cccd); ?>"
+                                required pattern="\d{12}" maxlength="12" title="Vui lòng nhập chính xác 12 chữ số"
                                 class="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all text-sm font-semibold text-slate-700"
                                 placeholder="Vui lòng nhập đúng 12 chữ số CCCD">
                         </div>
@@ -190,16 +197,16 @@ $bank = db_query_one($sql_bank, $user_id);
 
                         <div class="md:col-span-2 pt-4">
                             <?php if (isset($profile['status']) && $profile['status'] === 'active'): ?>
-                            <div
-                                class="p-4 bg-emerald-50 text-emerald-600 rounded-2xl text-sm font-bold text-center border border-emerald-100">
-                                <i class="fa-solid fa-shield-check mr-2"></i> Hồ sơ của bạn đã được Admin phê duyệt. Bạn
-                                không thể tự thay đổi thông tin.
-                            </div>
+                                <div
+                                    class="p-4 bg-emerald-50 text-emerald-600 rounded-2xl text-sm font-bold text-center border border-emerald-100">
+                                    <i class="fa-solid fa-shield-check mr-2"></i> Hồ sơ của bạn đã được Admin phê duyệt. Bạn
+                                    không thể tự thay đổi thông tin.
+                                </div>
                             <?php else: ?>
-                            <button type="submit"
-                                class="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 w-full md:w-auto">
-                                <?php echo empty($profile['ID_number']) ? 'Yêu cầu phê duyệt' : 'Lưu thay đổi thông tin'; ?>
-                            </button>
+                                <button type="submit"
+                                    class="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 w-full md:w-auto">
+                                    <?php echo empty($profile['customer_id']) ? 'Cập nhật hồ sơ' : 'Yêu cầu phê duyệt'; ?>
+                                </button>
                             <?php endif; ?>
                         </div>
                     </form>
@@ -267,35 +274,39 @@ $bank = db_query_one($sql_bank, $user_id);
 
     <script src="../assets/js/toast.js"></script>
     <script>
-    function toggleModal(modalId) {
-        const modal = document.getElementById(modalId);
-        modal.classList.toggle('hidden');
-    }
-
-    function checkBankAndDeposit(hasBank) {
-        if (!hasBank) {
-            showToast("Vui lòng liên kết tài khoản ngân hàng trước khi tiến hành nạp tiền!", "warning");
-            toggleModal('linkBankModal');
-        } else {
-            showToast("Hệ thống cổng thanh toán đang được bảo trì. Vui lòng quay lại sau!", "warning");
+        function toggleModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.toggle('hidden');
         }
-    }
 
-    document.addEventListener("DOMContentLoaded", function() {
-        const urlParams = new URLSearchParams(window.location.search);
-
-        if (urlParams.get('update') === 'success') {
-            showToast('Cập nhật thông tin cá nhân thành công!', 'success');
-        } else if (urlParams.get('update') === 'bank_success') {
-            showToast('Liên kết tài khoản ngân hàng thành công!', 'success');
-        } else if (urlParams.get('error') === 'invalid_id') {
-            showToast('Lỗi: Căn cước công dân phải đủ 12 số!', 'error');
-        } else if (urlParams.get('error') === 'bank_duplicate') {
-            showToast('Lỗi: Số thẻ đã được liên kết với tài khoản khác!', 'error');
-        } else if (urlParams.get('update') === 'bank_deleted') {
-            showToast('Đã hủy liên kết thẻ ngân hàng!', 'info');
+        function checkBankAndDeposit(hasBank) {
+            if (!hasBank) {
+                showToast("Vui lòng liên kết tài khoản ngân hàng trước khi tiến hành nạp tiền!", "warning");
+                toggleModal('linkBankModal');
+            } else {
+                showToast("Hệ thống cổng thanh toán đang được bảo trì. Vui lòng quay lại sau!", "warning");
+            }
         }
-    });
+
+        document.addEventListener("DOMContentLoaded", function() {
+            const urlParams = new URLSearchParams(window.location.search);
+
+            if (urlParams.get('update') === 'success') {
+                showToast('Cập nhật thông tin cá nhân thành công!', 'success');
+            } else if (urlParams.get('update') === 'success_pending') {
+                showToast('Đã gửi yêu cầu cập nhật. Vui lòng chờ Admin phê duyệt!', 'success');
+            } else if (urlParams.get('update') === 'bank_success') {
+                showToast('Liên kết tài khoản ngân hàng thành công!', 'success');
+            } else if (urlParams.get('error') === 'invalid_id') {
+                showToast('Lỗi: Căn cước công dân phải đủ 12 số!', 'error');
+            } else if (urlParams.get('error') === 'duplicate_cccd') {
+                showToast('Lỗi: Căn cước công dân này đã được đăng ký bởi một tài khoản khác!', 'error');
+            } else if (urlParams.get('error') === 'bank_duplicate') {
+                showToast('Lỗi: Số thẻ đã được liên kết với tài khoản khác!', 'error');
+            } else if (urlParams.get('update') === 'bank_deleted') {
+                showToast('Đã hủy liên kết thẻ ngân hàng!', 'info');
+            }
+        });
     </script>
 </body>
 
