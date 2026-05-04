@@ -18,6 +18,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         exit();
     }
 
+    // 1. Mở Transaction (Pessimistic Locking)
+    db_execute("START TRANSACTION");
+
     // TÌM PHÒNG TRỐNG: Lấy 1 room_id thuộc type_id, có status 'active', và KHÔNG trùng lặp thời gian trong Booking_detail & Booking (Ngoại trừ đơn đã hủy/hoàn thành)
     $find_room_sql = "
         SELECT r.room_id, rt.price 
@@ -31,26 +34,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             WHERE b.status NOT IN ('cancelled', 'completed')
             AND (b.check_in < ? AND b.check_out > ?)
         )
-        LIMIT 1
+        LIMIT 1 FOR UPDATE
     ";
     
     $available_room = db_query_one($find_room_sql, $type_id, $check_out, $check_in);
 
     if (!$available_room) {
+        db_execute("ROLLBACK"); // Nhả khóa nếu không tìm thấy phòng
         header("Location: ../frontend/customer_index.php?error=no_room_available#rooms");
         exit();
     }
 
-    // Tính tổng tiền = Giá 1 đêm * Số đêm (Làm tròn lên)
-    $nights = max(1, ceil((strtotime($check_out) - strtotime($check_in)) / 86400));
-    $total_price = $available_room['price'] * $nights;
-
-    // Ghi vào Database bằng transaction ngầm (thông qua DAO nếu có thể, hoặc tuần tự)
-    db_execute("INSERT INTO Booking (user_id, check_in, check_out, total_price, payment_method, status) VALUES (?, ?, ?, ?, 'Pay at Hotel', 'pending')", $user_id, $check_in, $check_out, $total_price);
-    $booking_id = db_query_value("SELECT booking_id FROM Booking WHERE user_id = ? ORDER BY booking_id DESC LIMIT 1", $user_id);
-    db_execute("INSERT INTO Booking_detail (booking_id, room_id, price_at_booking, sub_total, status) VALUES (?, ?, ?, ?, 'pending')", $booking_id, $available_room['room_id'], $available_room['price'], $total_price);
-
-    header("Location: ../frontend/customer_index.php?msg=booking_success");
-    exit();
+    try {
+        // Tính tổng tiền = Giá 1 đêm * Số đêm (Làm tròn lên)
+        $nights = max(1, ceil((strtotime($check_out) - strtotime($check_in)) / 86400));
+        $total_price = $available_room['price'] * $nights;
+    
+        // Ghi vào Database
+        db_execute("INSERT INTO Booking (user_id, check_in, check_out, total_price, payment_method, status) VALUES (?, ?, ?, ?, 'Pay at Hotel', 'pending')", $user_id, $check_in, $check_out, $total_price);
+        $booking_id = db_query_value("SELECT booking_id FROM Booking WHERE user_id = ? ORDER BY booking_id DESC LIMIT 1", $user_id);
+        db_execute("INSERT INTO Booking_detail (booking_id, room_id, price_at_booking, sub_total, status) VALUES (?, ?, ?, ?, 'pending')", $booking_id, $available_room['room_id'], $available_room['price'], $total_price);
+    
+        // 3. Commit Transaction chốt dữ liệu
+        db_execute("COMMIT");
+        header("Location: ../frontend/customer_index.php?msg=booking_success");
+        exit();
+    } catch (Exception $e) {
+        db_execute("ROLLBACK");
+        header("Location: ../frontend/customer_index.php?error=system_error#rooms");
+        exit();
+    }
 }
 ?>

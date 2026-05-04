@@ -63,6 +63,9 @@ $rooms = db_query("SELECT r.*, rt.name as type_name FROM Room r LEFT JOIN Room_t
             <button onclick="switchTab('roomTypesTab', this)" class="tab-btn pb-4 text-sm font-medium text-slate-400 hover:text-indigo-600 transition-all">
                 <i class="fa-solid fa-gears mr-2"></i>Cấu hình Loại phòng
             </button>
+            <button onclick="switchTab('timelineTab', this); loadTimelineOnce();" class="tab-btn pb-4 text-sm font-medium text-slate-400 hover:text-indigo-600 transition-all">
+                <i class="fa-solid fa-clock mr-2"></i>Lịch trình (Timeline)
+            </button>
         </div>
 
         <div id="roomsTab" class="tab-content block animate-in fade-in duration-500">
@@ -189,6 +192,37 @@ $rooms = db_query("SELECT r.*, rt.name as type_name FROM Room r LEFT JOIN Room_t
                         <?php endif; ?>
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <div id="timelineTab" class="tab-content hidden animate-in fade-in duration-500">
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-6 flex flex-wrap gap-4 items-center justify-between">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">Sơ đồ Lịch trình Phòng (24h)</h2>
+                    <p class="text-xs text-slate-400 mt-1">Hỗ trợ lễ tân xem phòng trống và nhận khách Walk-in.</p>
+                </div>
+                <div class="flex gap-2 items-center">
+                    <button onclick="changeTimelineDate(-1)" class="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600 transition"><i class="fa-solid fa-chevron-left"></i></button>
+                    <input type="date" id="timelineDate" class="px-4 py-2 border border-slate-200 rounded-lg text-slate-700 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500" value="<?php echo date('Y-m-d'); ?>" onchange="loadTimeline()">
+                    <button onclick="changeTimelineDate(1)" class="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600 transition"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto relative">
+                <div id="timelineContainer" class="min-w-[1000px] p-6">
+                    <div class="flex border-b border-slate-200 pb-2 mb-4 ml-32 relative">
+                        <?php for ($i = 0; $i < 24; $i++): ?>
+                            <div class="flex-1 text-center text-xs font-bold text-slate-400 border-l border-slate-100"><?php echo str_pad($i, 2, '0', STR_PAD_LEFT); ?>:00</div>
+                        <?php endfor; ?>
+                    </div>
+                    <div id="timelineBody" class="space-y-2"></div>
+                </div>
+            </div>
+            
+            <div class="mt-4 flex gap-6 text-xs font-medium text-slate-500 justify-center">
+                <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-slate-100 border border-slate-200"></span> Phòng trống</div>
+                <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-amber-400"></span> Đã đặt trước (Sắp đến)</div>
+                <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-indigo-500"></span> Đang có khách (Checked In)</div>
             </div>
         </div>
     </main>
@@ -373,6 +407,101 @@ $rooms = db_query("SELECT r.*, rt.name as type_name FROM Room r LEFT JOIN Room_t
 
         // Nếu URL có tham số tab=types thì tự động switch (phòng khi reload sau khi thêm/sửa)
         if (new URLSearchParams(window.location.search).get('tab') === 'types') { const tabBtns = document.querySelectorAll('.tab-btn'); if (tabBtns.length > 1) { try { switchTab('roomTypesTab', tabBtns[1]); } catch(e) {} } }
+
+        // ==========================================
+        // LOGIC TIMELINE PHÒNG
+        // ==========================================
+        let timelineLoaded = false;
+        function loadTimelineOnce() {
+            if(!timelineLoaded) {
+                loadTimeline();
+                timelineLoaded = true;
+            }
+        }
+
+        function loadTimeline() {
+            const date = document.getElementById('timelineDate').value;
+            const tbody = document.getElementById('timelineBody');
+            tbody.innerHTML = '<div class="text-center py-8 text-slate-500"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Đang tải dữ liệu...</div>';
+            
+            fetch(`../actions/api_room_timeline.php?date=${date}`)
+                .then(res => res.json())
+                .then(res => {
+                    if(res.status !== 'success') {
+                        tbody.innerHTML = `<div class="text-center py-8 text-red-500">Lỗi: ${res.message}</div>`;
+                        return;
+                    }
+                    renderTimeline(res.data, date);
+                })
+                .catch(err => {
+                    tbody.innerHTML = `<div class="text-center py-8 text-red-500">Lỗi hệ thống khi tải Timeline</div>`;
+                });
+        }
+
+        function changeTimelineDate(offset) {
+            const dateInput = document.getElementById('timelineDate');
+            const d = new Date(dateInput.value);
+            d.setDate(d.getDate() + offset);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            dateInput.value = `${year}-${month}-${day}`;
+            loadTimeline();
+        }
+
+        function renderTimeline(rooms, currentDate) {
+            const tbody = document.getElementById('timelineBody');
+            tbody.innerHTML = '';
+            
+            const startOfDay = new Date(`${currentDate}T00:00:00`).getTime();
+            const endOfDay = new Date(`${currentDate}T23:59:59`).getTime();
+            const totalMs = endOfDay - startOfDay;
+
+            rooms.forEach(room => {
+                const row = document.createElement('div');
+                row.className = 'flex items-center relative h-12 mb-1 group/row';
+                
+                const roomInfo = document.createElement('div');
+                roomInfo.className = 'w-32 flex-shrink-0 font-bold text-slate-700 text-sm z-10 bg-white flex flex-col justify-center';
+                roomInfo.innerHTML = `${room.room_number} <span class="text-[10px] font-normal text-slate-400">${room.type_name}</span>`;
+                row.appendChild(roomInfo);
+                
+                const track = document.createElement('div');
+                track.className = 'flex-1 h-10 bg-slate-50 rounded-lg relative overflow-hidden border border-slate-200 flex group-hover/row:bg-slate-100 transition';
+                
+                for(let i=0; i<24; i++) {
+                    const line = document.createElement('div');
+                    line.className = 'flex-1 border-l border-slate-200/50 h-full pointer-events-none';
+                    track.appendChild(line);
+                }
+
+                room.bookings.forEach(b => {
+                    // Đồng bộ định dạng chuỗi thời gian để tính toán an toàn
+                    const bStart = new Date(b.check_in.replace(' ', 'T')).getTime();
+                    const bEnd = new Date(b.check_out.replace(' ', 'T')).getTime();
+                    let leftPercent = ((bStart - startOfDay) / totalMs) * 100;
+                    let widthPercent = ((bEnd - bStart) / totalMs) * 100;
+                    if(leftPercent < 0) { widthPercent += leftPercent; leftPercent = 0; }
+                    if(leftPercent + widthPercent > 100) { widthPercent = 100 - leftPercent; }
+                    if(widthPercent <= 0) return;
+
+                    const isCheckedIn = ['checked_in', 'confirmed'].includes(b.status.toLowerCase());
+                    const colorClass = isCheckedIn ? 'bg-indigo-500' : 'bg-amber-400';
+                    const block = document.createElement('div');
+                    block.className = `absolute h-full ${colorClass} bg-opacity-90 border-x border-white/20 shadow-sm cursor-pointer hover:bg-opacity-100 transition flex items-center justify-center overflow-visible group/block rounded-sm`;
+                    block.style.left = `${leftPercent}%`;
+                    block.style.width = `${widthPercent}%`;
+                    
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'absolute hidden group-hover/block:block bottom-full mb-1 bg-slate-800 text-white text-[11px] p-2.5 rounded-xl shadow-xl whitespace-nowrap z-50 left-1/2 -translate-x-1/2 pointer-events-none';
+                    tooltip.innerHTML = `<div class="font-bold text-indigo-300 mb-1"><i class="fa-solid fa-user mr-1"></i>${b.customer_name}</div><div class="flex gap-2 items-center"><i class="fa-regular fa-clock"></i> In: ${b.check_in.substring(11, 16)}</div><div class="flex gap-2 items-center"><i class="fa-solid fa-right-from-bracket"></i> Out: ${b.check_out.substring(11, 16)}</div><div class="mt-1.5 pt-1.5 border-t border-slate-600 text-slate-300">T.thái: <span class="uppercase font-bold">${b.status}</span></div><div class="absolute w-2 h-2 bg-slate-800 rotate-45 -bottom-1 left-1/2 -translate-x-1/2"></div>`;
+                    block.appendChild(tooltip);
+                    track.appendChild(block);
+                });
+                row.appendChild(track);
+                tbody.appendChild(row);
+            });
+        }
   </script>
 
 </body>

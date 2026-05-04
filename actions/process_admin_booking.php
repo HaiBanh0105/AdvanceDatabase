@@ -29,21 +29,34 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // Luôn mặc định đã check-in khi tạo thủ công
         $status = 'checked_in'; 
 
-        // Tìm phòng trống (Sử dụng lại logic tương tự file process_booking)
-        $find_room_sql = "SELECT r.room_id, rt.price FROM Room r JOIN Room_types rt ON r.type_id = rt.type_id WHERE r.type_id = ? AND r.status = 'active' AND r.room_id NOT IN (SELECT bd.room_id FROM Booking_detail bd JOIN Booking b ON bd.booking_id = b.booking_id WHERE b.status NOT IN ('cancelled', 'completed') AND (b.check_in < ? AND b.check_out > ?)) LIMIT 1";
+        // 1. Mở Transaction (Pessimistic Locking)
+        db_execute("START TRANSACTION");
+
+        // 2. Tìm phòng trống và KHÓA dòng dữ liệu bằng FOR UPDATE
+        $find_room_sql = "SELECT r.room_id, rt.price FROM Room r JOIN Room_types rt ON r.type_id = rt.type_id WHERE r.type_id = ? AND r.status = 'active' AND r.room_id NOT IN (SELECT bd.room_id FROM Booking_detail bd JOIN Booking b ON bd.booking_id = b.booking_id WHERE b.status NOT IN ('cancelled', 'completed') AND (b.check_in < ? AND b.check_out > ?)) LIMIT 1 FOR UPDATE";
         $available_room = db_query_one($find_room_sql, $type_id, $check_out, $check_in);
         if (!$available_room) {
+            db_execute("ROLLBACK"); // Mở khóa nếu không tìm thấy phòng
             header("Location: ../frontend/admin_bookings.php?error=no_room");
             exit();
         }
 
-        $nights = max(1, ceil((strtotime($check_out) - strtotime($check_in)) / 86400));
-        $total_price = $available_room['price'] * $nights;
-
-        db_execute("INSERT INTO Booking (guest_name, guest_phone, guest_cccd, check_in, check_out, total_price, payment_method, status) VALUES (?, ?, ?, ?, ?, ?, 'Cash', ?)", $guest_name, $guest_phone, $guest_cccd, $check_in, $check_out, $total_price, $status);
-        $booking_id = db_query_value("SELECT booking_id FROM Booking ORDER BY booking_id DESC LIMIT 1");
-        db_execute("INSERT INTO Booking_detail (booking_id, room_id, price_at_booking, sub_total, status) VALUES (?, ?, ?, ?, ?)", $booking_id, $available_room['room_id'], $available_room['price'], $total_price, $status);
-        header("Location: ../frontend/admin_bookings.php?msg=booking_created");
+        try {
+            $nights = max(1, ceil((strtotime($check_out) - strtotime($check_in)) / 86400));
+            $total_price = $available_room['price'] * $nights;
+    
+            db_execute("INSERT INTO Booking (guest_name, guest_phone, guest_cccd, check_in, check_out, total_price, payment_method, status) VALUES (?, ?, ?, ?, ?, ?, 'Cash', ?)", $guest_name, $guest_phone, $guest_cccd, $check_in, $check_out, $total_price, $status);
+            $booking_id = db_query_value("SELECT booking_id FROM Booking ORDER BY booking_id DESC LIMIT 1");
+            db_execute("INSERT INTO Booking_detail (booking_id, room_id, price_at_booking, sub_total, status) VALUES (?, ?, ?, ?, ?)", $booking_id, $available_room['room_id'], $available_room['price'], $total_price, $status);
+            
+            // 3. Cập nhật thành công -> Commit Transaction để lưu dữ liệu và nhả Khóa
+            db_execute("COMMIT");
+            header("Location: ../frontend/admin_bookings.php?msg=booking_created");
+        } catch (Exception $e) {
+            db_execute("ROLLBACK"); // Hoàn tác nếu có lỗi hệ thống
+            header("Location: ../frontend/admin_bookings.php?error=system_error");
+            exit();
+        }
     }
 }
 ?>
