@@ -185,6 +185,31 @@ BEGIN
 END;
 GO
 
+--VIEW
+CREATE VIEW vw_TopRoomsByRevenue AS
+WITH RoomRevenue AS (
+    SELECT 
+        r.room_id, 
+        r.room_number,
+        rt.name AS type_name,
+        ISNULL(SUM(b.total_price), 0) AS total_revenue
+    FROM Room r
+    JOIN Room_types rt ON r.type_id = rt.type_id
+    JOIN Booking_detail bd ON r.room_id = bd.room_id
+    JOIN Booking b ON bd.booking_id = b.booking_id
+    WHERE b.booking_status = 'completed'
+    GROUP BY r.room_id, r.room_number, rt.name
+),
+RankedRooms AS (
+    SELECT *, 
+           DENSE_RANK() OVER (ORDER BY total_revenue DESC) AS revenue_rank, -- Hàm DENSE_RANK (Xếp hạng khít - Khuyên dùng)
+           RANK() OVER (ORDER BY total_revenue DESC) AS test_rank,          -- Hàm RANK (Xếp hạng nhảy cóc)
+           ROW_NUMBER() OVER (ORDER BY total_revenue DESC) AS test_row_num  -- Hàm ROW_NUMBER (Chỉ đánh số thứ tự 1,2,3...)
+    FROM RoomRevenue
+)
+SELECT * FROM RankedRooms;
+GO
+
 -- 1. Thêm nhân viên
 INSERT INTO Employee (username, password, full_name, role) VALUES 
 ('admin', '123', N'Nguyễn Công Thành', 'Admin');

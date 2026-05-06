@@ -21,6 +21,20 @@ $room_types = room_type_get_all('price ASC');
 
 $rooms = db_query("SELECT room_number, status FROM Room ORDER BY room_number ASC");
 
+$top_limit = isset($_GET['top']) ? (int)$_GET['top'] : 5;
+if ($top_limit <= 0) $top_limit = 5;
+
+// Bắt tham số chọn hàm xếp hạng từ URL (Mặc định là DENSE_RANK)
+$rank_type = isset($_GET['rank_type']) ? $_GET['rank_type'] : 'dense_rank';
+$rank_column = 'revenue_rank';
+if ($rank_type === 'rank') {
+    $rank_column = 'test_rank';
+} elseif ($rank_type === 'row_number') {
+    $rank_column = 'test_row_num';
+}
+
+// Thực hiện lọc và sắp xếp động dựa trên Hàm và Top giới hạn đã chọn
+$top_rooms = db_query("SELECT * FROM vw_TopRoomsByRevenue WHERE $rank_column <= ? ORDER BY $rank_column ASC", $top_limit);
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -74,49 +88,126 @@ $rooms = db_query("SELECT room_number, status FROM Room ORDER BY room_number ASC
             </div>
         </div>
 
-        <div id="room-types" class="bg-white rounded-2xl border border-slate-200 shadow-sm mb-10 overflow-hidden">
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                <h2 class="font-bold text-slate-800">Bảng giá & Loại phòng</h2>
-                <a class="text-indigo-600 text-sm font-bold hover:underline" href="admin_rooms.php">Chỉnh sửa tất cả</a>
-            </div>
-            <table class="w-full text-left">
-                <thead
-                    class="bg-slate-50 text-slate-400 text-[10px] uppercase font-bold tracking-widest border-b border-slate-100">
-                    <tr>
-                        <th class="px-6 py-4">Loại phòng</th>
-                        <th class="px-6 py-4">Sức chứa</th>
-                        <th class="px-6 py-4">Giá hiện tại (MONEY)</th>
-                        <th class="px-6 py-4">Trạng thái</th>
-                        <th class="px-6 py-4 text-right">Hành động</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-50">
-                    <?php if (empty($room_types)): ?>
-                        <tr>
-                            <td colspan="5" class="px-6 py-4 text-center text-slate-400">Chưa có hạng phòng nào</td>
-                        </tr>
-                    <?php else: ?>
-                        <?php foreach ($room_types as $rt): ?>
-                            <tr class="hover:bg-slate-50/50 transition">
-                                <td class="px-6 py-4 font-bold text-slate-700"><?= htmlspecialchars($rt['name']) ?></td>
-                                <td class="px-6 py-4 text-slate-500"><?= $rt['capacity'] ?> người</td>
-                                <td class="px-6 py-4 font-bold text-indigo-600 uppercase">
-                                    <?= number_format($rt['price_per_day'], 0, ',', '.') ?>đ</td>
-                                <td class="px-6 py-4">
-                                    <span
-                                        class="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-[10px] font-bold">ĐANG
-                                        BÁN</span>
-                                </td>
-                                <td class="px-6 py-4 text-right">
-                                    <a href="admin_rooms.php?tab=types"
-                                        class="text-slate-400 hover:text-indigo-600 transition p-2"><i
-                                            class="fa-solid fa-pen"></i></a>
-                                </td>
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-10">
+            <div id="room-types"
+                class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden h-[540px] flex flex-col">
+                <div
+                    class="px-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 h-[76px] shrink-0">
+                    <h2 class="font-bold text-slate-800">Bảng giá & Loại phòng</h2>
+                    <a class="text-indigo-600 text-sm font-bold hover:underline" href="admin_rooms.php">Chỉnh sửa tất
+                        cả</a>
+                </div>
+                <div class="flex-1 overflow-y-auto min-h-0">
+                    <table class="w-full text-left relative">
+                        <thead
+                            class="bg-slate-50 text-slate-400 text-[10px] uppercase font-bold tracking-widest border-b border-slate-100 sticky top-0 z-10 shadow-sm">
+                            <tr class="h-[52px]">
+                                <th class="px-6">Loại phòng</th>
+                                <th class="px-6 text-right">Giá hiện tại</th>
                             </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+                        </thead>
+                        <tbody class="divide-y divide-slate-50">
+                            <?php if (empty($room_types)): ?>
+                                <tr>
+                                    <td colspan="2" class="px-6 py-4 text-center text-slate-400">Chưa có hạng phòng nào</td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($room_types as $rt): ?>
+                                    <tr class="hover:bg-slate-50/50 transition">
+                                        <td class="px-6 py-4">
+                                            <p class="font-bold text-slate-700"><?= htmlspecialchars($rt['name']) ?></p>
+                                            <p class="text-xs text-slate-500 mt-1"><i
+                                                    class="fa-solid fa-user-group text-slate-400 mr-1"></i> Tối đa
+                                                <?= $rt['capacity'] ?> khách</p>
+                                        </td>
+                                        <td class="px-6 py-4 text-right font-black text-indigo-600 uppercase">
+                                            <?= number_format($rt['price_per_day'], 0, ',', '.') ?>đ<span
+                                                class="text-[10px] text-slate-400 block font-bold">/ ĐÊM</span>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="top-rooms"
+                class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden h-[540px] flex flex-col">
+                <div
+                    class="px-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center h-[76px] shrink-0">
+                    <h2 class="font-bold text-slate-800"><i class="fa-solid fa-trophy text-amber-500 mr-2"></i>Top Phòng
+                        Doanh Thu Cao Nhất</h2>
+                    <form method="GET" action="" id="topRoomsForm" class="m-0 flex gap-2">
+                        <!-- Thêm ô Chọn Hàm Xếp Hạng -->
+                        <select name="rank_type" onchange="document.getElementById('topRoomsForm').submit()"
+                            class="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white cursor-pointer hover:bg-slate-50 transition">
+                            <option value="dense_rank" <?= $rank_type == 'dense_rank' ? 'selected' : '' ?>>DENSE_RANK()
+                            </option>
+                            <option value="rank" <?= $rank_type == 'rank' ? 'selected' : '' ?>>RANK()</option>
+                            <option value="row_number" <?= $rank_type == 'row_number' ? 'selected' : '' ?>>ROW_NUMBER()
+                            </option>
+                        </select>
+                        <select name="top" onchange="document.getElementById('topRoomsForm').submit()"
+                            class="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white cursor-pointer hover:bg-slate-50 transition">
+                            <option value="3" <?= $top_limit == 3 ? 'selected' : '' ?>>Top 3</option>
+                            <option value="5" <?= $top_limit == 5 ? 'selected' : '' ?>>Top 5</option>
+                            <option value="10" <?= $top_limit == 10 ? 'selected' : '' ?>>Top 10</option>
+                            <option value="100" <?= $top_limit == 100 ? 'selected' : '' ?>>Tất cả</option>
+                        </select>
+                    </form>
+                </div>
+                <div class="flex-1 overflow-y-auto min-h-0">
+                    <table class="w-full text-left relative">
+                        <thead
+                            class="bg-slate-50 text-slate-400 text-[10px] uppercase font-bold tracking-widest border-b border-slate-100 sticky top-0 z-10 shadow-sm">
+                            <tr class="h-[52px]">
+                                <th class="px-6 text-center w-24">Xếp hạng</th>
+                                <th class="px-6">Phòng</th>
+                                <th class="px-6 text-right">Tổng Doanh thu</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-50">
+                            <?php if (empty($top_rooms)): ?>
+                                <tr>
+                                    <td colspan="3" class="px-6 py-12 text-center text-slate-400 italic">Chưa có dữ liệu
+                                        doanh thu</td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($top_rooms as $tr): ?>
+                                    <?php $display_rank = $tr[$rank_column]; ?>
+                                    <tr class="hover:bg-slate-50/50 transition">
+                                        <td class="px-6 py-4 text-center">
+                                            <?php if ($display_rank == 1): ?>
+                                                <span
+                                                    class="bg-amber-100 text-amber-600 px-3 py-1 rounded-full text-xs font-black shadow-sm"><i
+                                                        class="fa-solid fa-medal mr-1"></i> 1</span>
+                                            <?php elseif ($display_rank == 2): ?>
+                                                <span
+                                                    class="bg-slate-200 text-slate-600 px-3 py-1 rounded-full text-xs font-black shadow-sm"><i
+                                                        class="fa-solid fa-medal mr-1"></i> 2</span>
+                                            <?php else: ?>
+                                                <span
+                                                    class="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-xs font-black shadow-sm"><i
+                                                        class="fa-solid fa-medal mr-1"></i> <?= $display_rank ?></span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <p class="font-black text-slate-700 text-lg">
+                                                P.<?= htmlspecialchars($tr['room_number']) ?></p>
+                                            <p class="text-slate-500 text-[10px] font-bold uppercase mt-1 tracking-widest">
+                                                <?= htmlspecialchars($tr['type_name']) ?></p>
+                                        </td>
+                                        <td class="px-6 py-4 text-right font-black text-emerald-600 text-lg">
+                                            <?= number_format($tr['total_revenue'], 0, ',', '.') ?>đ
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <div id="rooms" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -133,7 +224,7 @@ $rooms = db_query("SELECT room_number, status FROM Room ORDER BY room_number ASC
                         $status_text = 'Sẵn sàng';
                     } elseif ($r['status'] == 'occupied') {
                         $status_class = 'bg-red-100 text-red-600';
-                        $status_text = 'Đang ở';
+                        $status_text = '<i class="fa-solid fa-bed mr-1"></i>Đang ở';
                     } elseif ($r['status'] == 'cleaning') {
                         $status_class = 'bg-amber-100 text-amber-600';
                         $status_text = 'Dọn dẹp';
@@ -158,7 +249,6 @@ $rooms = db_query("SELECT room_number, status FROM Room ORDER BY room_number ASC
     </main>
 
     <script>
-        // JS xử lý các tương tác nhanh
         console.log("Admin Dashboard Loaded");
     </script>
 </body>

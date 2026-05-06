@@ -82,10 +82,10 @@ $default_tab = ($search !== '') ? 'listTab' : 'mapTab';
         </div>
 
         <?php if ($error_msg): ?>
-        <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded shadow-sm" role="alert">
-            <p class="font-bold">Lỗi Cơ sở dữ liệu!</p>
-            <p><?php echo htmlspecialchars($error_msg); ?></p>
-        </div>
+            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded shadow-sm" role="alert">
+                <p class="font-bold">Lỗi Cơ sở dữ liệu!</p>
+                <p><?php echo htmlspecialchars($error_msg); ?></p>
+            </div>
         <?php endif; ?>
 
         <!-- Tab bar -->
@@ -113,29 +113,29 @@ $default_tab = ($search !== '') ? 'listTab' : 'mapTab';
             </div>
 
             <?php foreach ($grouped_rooms as $type_name => $rooms): ?>
-            <?php
+                <?php
                 $total = count($rooms);
                 $occupied = count(array_filter($rooms, fn($r) => isset($active_map[$r['room_id']]) || ($r['room_status'] ?? $r['status'] ?? '') === 'occupied'));
                 $free = count(array_filter($rooms, fn($r) => !isset($active_map[$r['room_id']]) && ($r['room_status'] ?? $r['status'] ?? '') === 'available'));
                 ?>
 
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 mb-6 overflow-hidden">
-                <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                    <div>
-                        <h2 class="font-bold text-slate-800 text-base">
-                            <?php echo htmlspecialchars($type_name ?? ''); ?>
-                        </h2>
-                        <p class="text-xs text-slate-400 mt-0.5">
-                            Tổng: <strong><?= $total ?></strong> phòng ·
-                            <span class="text-red-500 font-semibold"><?= $occupied ?> đang có khách</span> ·
-                            <span class="text-emerald-600 font-semibold"><?= $free ?> trống</span>
-                        </p>
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 mb-6 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                        <div>
+                            <h2 class="font-bold text-slate-800 text-base">
+                                <?php echo htmlspecialchars($type_name ?? ''); ?>
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-0.5">
+                                Tổng: <strong><?= $total ?></strong> phòng ·
+                                <span class="text-red-500 font-semibold"><?= $occupied ?> đang có khách</span> ·
+                                <span class="text-emerald-600 font-semibold"><?= $free ?> trống</span>
+                            </p>
+                        </div>
                     </div>
-                </div>
 
-                <div class="p-6 flex flex-wrap gap-3">
-                    <?php foreach ($rooms as $room): ?>
-                    <?php
+                    <div class="p-6 flex flex-wrap gap-3">
+                        <?php foreach ($rooms as $room): ?>
+                            <?php
                             $rid = $room['room_id'];
                             $rnum = $room['room_number'];
                             $p_hr = $room['price_per_hour'] ?? 0;
@@ -144,8 +144,8 @@ $default_tab = ($search !== '') ? 'listTab' : 'mapTab';
                             $occupied_info = $active_map[$rid] ?? null;
                             ?>
 
-                    <?php if ($occupied_info): ?>
-                    <?php
+                            <?php if ($occupied_info): ?>
+                                <?php
                                 $data_js = htmlspecialchars(json_encode([
                                     'booking_id' => $occupied_info['booking_id'],
                                     'customer_name' => $occupied_info['customer_name'],
@@ -155,46 +155,46 @@ $default_tab = ($search !== '') ? 'listTab' : 'mapTab';
                                     'type_name' => $type_name,
                                 ]), ENT_QUOTES, 'UTF-8');
                                 ?>
-                    <button onclick="openViewBookingModal(<?php echo $data_js; ?>)" title="Đang có khách. Click để xem"
-                        class="room-occupied w-16 h-16 bg-red-500 hover:bg-red-600 text-white font-bold text-sm rounded-xl flex flex-col items-center justify-center gap-0.5 shadow-md transition cursor-pointer">
-                        <span><?= $rnum ?></span>
-                        <i class="fa-solid fa-person-shelter text-xs opacity-80"></i>
-                    </button>
-                    <?php elseif (($room['room_status'] ?? $room['status'] ?? '') === 'occupied'): ?>
-                    <div title="Đang có khách (Chưa ghi nhận trên hệ thống)"
-                        class="room-occupied w-16 h-16 bg-red-500 text-white font-bold text-sm rounded-xl flex flex-col items-center justify-center gap-0.5 shadow-md cursor-not-allowed">
-                        <span><?= $rnum ?></span>
-                        <i class="fa-solid fa-person-shelter text-xs opacity-80"></i>
+                                <button onclick="openViewBookingModal(<?php echo $data_js; ?>)" title="Đang có khách. Click để xem"
+                                    class="room-occupied w-16 h-16 bg-red-500 hover:bg-red-600 text-white font-bold text-sm rounded-xl flex flex-col items-center justify-center gap-0.5 shadow-md transition cursor-pointer">
+                                    <span><?= $rnum ?></span>
+                                    <i class="fa-solid fa-bed text-xs opacity-80"></i>
+                                </button>
+                            <?php elseif (($room['room_status'] ?? $room['status'] ?? '') === 'occupied'): ?>
+                                <div title="Đang có khách (Chưa ghi nhận trên hệ thống)"
+                                    class="room-occupied w-16 h-16 bg-red-500 text-white font-bold text-sm rounded-xl flex flex-col items-center justify-center gap-0.5 shadow-md cursor-not-allowed">
+                                    <span><?= $rnum ?></span>
+                                    <i class="fa-solid fa-bed text-xs opacity-80"></i>
+                                </div>
+                            <?php elseif (($room['room_status'] ?? $room['status'] ?? '') === 'cleaning'): ?>
+                                <form action="../actions/process_admin_booking.php" method="POST" class="inline"
+                                    onsubmit="return confirm('Xác nhận phòng đã sẵn sàng hoạt động?');">
+                                    <input type="hidden" name="action" value="mark_room_ready">
+                                    <input type="hidden" name="room_id" value="<?= $rid ?>">
+                                    <button type="submit" title="Đang dọn dẹp. Click để chuyển sang Sẵn sàng"
+                                        class="w-16 h-16 bg-amber-400 hover:bg-amber-500 text-white font-bold text-sm rounded-xl flex flex-col items-center justify-center gap-0.5 shadow-md transition cursor-pointer">
+                                        <span><?= $rnum ?></span>
+                                        <i class="fa-solid fa-broom text-xs"></i>
+                                    </button>
+                                </form>
+                            <?php elseif (($room['room_status'] ?? $room['status'] ?? '') === 'maintenance'): ?>
+                                <div title="Đang bảo trì"
+                                    class="w-16 h-16 bg-slate-200 text-slate-400 font-bold text-sm rounded-xl flex flex-col items-center justify-center gap-0.5 cursor-not-allowed">
+                                    <span><?= $rnum ?></span>
+                                    <i class="fa-solid fa-wrench text-xs"></i>
+                                </div>
+                            <?php else: ?>
+                                <button
+                                    onclick="openWalkinModal(<?= $rid ?>,'<?= $rnum ?>','<?= htmlspecialchars(addslashes($type_name)) ?>',<?= $p_hr ?>,<?= $p_day ?>, <?= $capacity ?>)"
+                                    title="Phòng trống. Click để nhận khách"
+                                    class="w-16 h-16 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm rounded-xl flex flex-col items-center justify-center gap-0.5 shadow-md transition cursor-pointer">
+                                    <span><?= $rnum ?></span>
+                                    <i class="fa-solid fa-plus text-xs opacity-80"></i>
+                                </button>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
                     </div>
-                    <?php elseif (($room['room_status'] ?? $room['status'] ?? '') === 'cleaning'): ?>
-                    <form action="../actions/process_admin_booking.php" method="POST" class="inline"
-                        onsubmit="return confirm('Xác nhận phòng đã sẵn sàng hoạt động?');">
-                        <input type="hidden" name="action" value="mark_room_ready">
-                        <input type="hidden" name="room_id" value="<?= $rid ?>">
-                        <button type="submit" title="Đang dọn dẹp. Click để chuyển sang Sẵn sàng"
-                            class="w-16 h-16 bg-amber-400 hover:bg-amber-500 text-white font-bold text-sm rounded-xl flex flex-col items-center justify-center gap-0.5 shadow-md transition cursor-pointer">
-                            <span><?= $rnum ?></span>
-                            <i class="fa-solid fa-broom text-xs"></i>
-                        </button>
-                    </form>
-                    <?php elseif (($room['room_status'] ?? $room['status'] ?? '') === 'maintenance'): ?>
-                    <div title="Đang bảo trì"
-                        class="w-16 h-16 bg-slate-200 text-slate-400 font-bold text-sm rounded-xl flex flex-col items-center justify-center gap-0.5 cursor-not-allowed">
-                        <span><?= $rnum ?></span>
-                        <i class="fa-solid fa-wrench text-xs"></i>
-                    </div>
-                    <?php else: ?>
-                    <button
-                        onclick="openWalkinModal(<?= $rid ?>,'<?= $rnum ?>','<?= htmlspecialchars(addslashes($type_name)) ?>',<?= $p_hr ?>,<?= $p_day ?>, <?= $capacity ?>)"
-                        title="Phòng trống. Click để nhận khách"
-                        class="w-16 h-16 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm rounded-xl flex flex-col items-center justify-center gap-0.5 shadow-md transition cursor-pointer">
-                        <span><?= $rnum ?></span>
-                        <i class="fa-solid fa-plus text-xs opacity-80"></i>
-                    </button>
-                    <?php endif; ?>
-                    <?php endforeach; ?>
                 </div>
-            </div>
             <?php endforeach; ?>
         </div>
 
@@ -228,104 +228,104 @@ $default_tab = ($search !== '') ? 'listTab' : 'mapTab';
                     </thead>
                     <tbody id="bookingTableBody" class="divide-y divide-slate-100 text-sm">
                         <?php if (empty($bookings)): ?>
-                        <tr>
-                            <td colspan="6" class="px-6 py-12 text-center text-slate-400">Không có đơn đặt phòng
-                                nào.
-                            </td>
-                        </tr>
+                            <tr>
+                                <td colspan="6" class="px-6 py-12 text-center text-slate-400">Không có đơn đặt phòng
+                                    nào.
+                                </td>
+                            </tr>
                         <?php endif; ?>
                         <?php foreach ($bookings as $b): ?>
-                        <tr class="hover:bg-slate-50 transition">
-                            <td class="px-6 py-4 font-black text-indigo-600">
-                                #BK-<?= str_pad($b['booking_id'], 4, '0', STR_PAD_LEFT) ?></td>
-                            <td class="px-6 py-4">
-                                <p class="font-bold text-slate-800">
-                                    <?= htmlspecialchars($b['full_name'] ?? $b['guest_name']) ?>
-                                </p>
-                                <p class="text-xs text-slate-400">
-                                    SDT:
-                                    <?= htmlspecialchars($b['user_phone'] ?? $b['guest_phone']) ?>
-                                </p>
-                                <p class="text-xs text-slate-400">
-                                    CCCD: <?= htmlspecialchars($b['user_cccd'] ?? $b['guest_cccd']) ?>
-                                </p>
-                                <?php if (!empty($b['extra_guests_info'])): ?>
-                                <div class="mt-2 pt-2 border-t border-slate-100">
-                                    <p class="text-[10px] font-bold text-slate-400 uppercase">Khách đi cùng:</p>
-                                    <p class="text-[11px] text-indigo-600 font-medium">
-                                        <?= $b['extra_guests_info'] ?>
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-6 py-4 font-black text-indigo-600">
+                                    #BK-<?= str_pad($b['booking_id'], 4, '0', STR_PAD_LEFT) ?></td>
+                                <td class="px-6 py-4">
+                                    <p class="font-bold text-slate-800">
+                                        <?= htmlspecialchars($b['full_name'] ?? $b['guest_name']) ?>
                                     </p>
-                                </div>
-                                <?php endif; ?>
-                            </td>
-                            <td class="px-6 py-4">
-                                <p class="font-bold text-slate-800"><?= htmlspecialchars($b['room_number'] ?? '') ?>
-                                </p>
-                                <p class="text-xs text-slate-400"><?= htmlspecialchars($b['type_name'] ?? '') ?></p>
-                            </td>
-                            <td class="px-6 py-4 text-slate-600 text-xs">
-                                <div><span class="font-bold">IN:</span>
-                                    <?= date('d/m/Y H:i', strtotime($b['check_in'])) ?></div>
-                                <?php if ($b['status'] === 'completed' || $b['status'] === 'cancelled'): ?>
-                                <div><span class="font-bold">OUT:</span>
-                                    <?= date('d/m/Y H:i', strtotime($b['check_out'])) ?></div>
-                                <?php else: ?>
-                                <div><span class="font-bold">OUT:</span> <span class="text-slate-400 italic">Chưa
-                                        trả
-                                        phòng</span></div>
-                                <?php endif; ?>
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <?php if ($b['status'] == 'pending'): ?>
-                                <span
-                                    class="px-2 py-1 rounded text-[10px] font-bold bg-amber-100 text-amber-600 uppercase">Chờ
-                                    duyệt</span>
-                                <?php elseif ($b['status'] == 'confirmed'): ?>
-                                <span
-                                    class="px-2 py-1 rounded text-[10px] font-bold bg-blue-100 text-blue-600 uppercase">Đã
-                                    xác nhận</span>
-                                <?php elseif ($b['status'] == 'checked-in'): ?>
-                                <span
-                                    class="px-2 py-1 rounded text-[10px] font-bold bg-indigo-100 text-indigo-600 uppercase">Đang
-                                    ở</span>
-                                <?php elseif ($b['status'] == 'completed'): ?>
-                                <span
-                                    class="px-2 py-1 rounded text-[10px] font-bold bg-emerald-100 text-emerald-600 uppercase">Hoàn
-                                    thành</span>
-                                <?php elseif ($b['status'] == 'cancelled'): ?>
-                                <span
-                                    class="px-2 py-1 rounded text-[10px] font-bold bg-red-100 text-red-600 uppercase">Đã
-                                    hủy</span>
-                                <?php endif; ?>
-                            </td>
-                            <td class="px-6 py-4 text-center space-x-1 whitespace-nowrap">
-                                <?php if ($b['status'] == 'pending'): ?>
-                                <form action="../actions/process_admin_booking.php" method="POST" class="inline">
-                                    <input type="hidden" name="action" value="update_status">
-                                    <input type="hidden" name="booking_id" value="<?= $b['booking_id'] ?>">
-                                    <button type="submit" name="status" value="confirmed"
-                                        class="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-[10px] uppercase font-bold hover:bg-blue-100 transition shadow-sm"
-                                        title="Duyệt đơn này"><i class="fa-solid fa-check"></i> Duyệt</button>
-                                    <button type="submit" name="status" value="cancelled"
-                                        onclick="return confirm('Bạn có chắc chắn muốn hủy đơn này?');"
-                                        class="bg-red-50 text-red-600 px-3 py-1.5 rounded-lg text-[10px] uppercase font-bold hover:bg-red-100 transition shadow-sm"
-                                        title="Hủy đơn"><i class="fa-solid fa-xmark"></i> Hủy</button>
-                                </form>
-                                <?php elseif ($b['status'] == 'confirmed'): ?>
-                                <form action="../actions/process_admin_booking.php" method="POST" class="inline">
-                                    <input type="hidden" name="action" value="update_status">
-                                    <input type="hidden" name="booking_id" value="<?= $b['booking_id'] ?>">
-                                    <button type="submit" name="status" value="checked_in"
-                                        class="bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-lg text-[10px] uppercase font-bold hover:bg-indigo-100 transition shadow-sm"
-                                        title="Khách đã nhận phòng"><i class="fa-solid fa-key"></i> Nhận
-                                        phòng</button>
-                                    <button type="submit" name="status" value="cancelled"
-                                        onclick="return confirm('Bạn có chắc chắn muốn hủy đơn này?');"
-                                        class="bg-red-50 text-red-600 px-3 py-1.5 rounded-lg text-[10px] uppercase font-bold hover:bg-red-100 transition shadow-sm"
-                                        title="Hủy đơn"><i class="fa-solid fa-xmark"></i> Hủy</button>
-                                </form>
-                                <?php elseif ($b['status'] == 'checked-in'): ?>
-                                <?php
+                                    <p class="text-xs text-slate-400">
+                                        SDT:
+                                        <?= htmlspecialchars($b['user_phone'] ?? $b['guest_phone']) ?>
+                                    </p>
+                                    <p class="text-xs text-slate-400">
+                                        CCCD: <?= htmlspecialchars($b['user_cccd'] ?? $b['guest_cccd']) ?>
+                                    </p>
+                                    <?php if (!empty($b['extra_guests_info'])): ?>
+                                        <div class="mt-2 pt-2 border-t border-slate-100">
+                                            <p class="text-[10px] font-bold text-slate-400 uppercase">Khách đi cùng:</p>
+                                            <p class="text-[11px] text-indigo-600 font-medium">
+                                                <?= $b['extra_guests_info'] ?>
+                                            </p>
+                                        </div>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <p class="font-bold text-slate-800"><?= htmlspecialchars($b['room_number'] ?? '') ?>
+                                    </p>
+                                    <p class="text-xs text-slate-400"><?= htmlspecialchars($b['type_name'] ?? '') ?></p>
+                                </td>
+                                <td class="px-6 py-4 text-slate-600 text-xs">
+                                    <div><span class="font-bold">IN:</span>
+                                        <?= date('d/m/Y H:i', strtotime($b['check_in'])) ?></div>
+                                    <?php if ($b['status'] === 'completed' || $b['status'] === 'cancelled'): ?>
+                                        <div><span class="font-bold">OUT:</span>
+                                            <?= date('d/m/Y H:i', strtotime($b['check_out'])) ?></div>
+                                    <?php else: ?>
+                                        <div><span class="font-bold">OUT:</span> <span class="text-slate-400 italic">Chưa
+                                                trả
+                                                phòng</span></div>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="px-6 py-4 text-center">
+                                    <?php if ($b['status'] == 'pending'): ?>
+                                        <span
+                                            class="px-2 py-1 rounded text-[10px] font-bold bg-amber-100 text-amber-600 uppercase">Chờ
+                                            duyệt</span>
+                                    <?php elseif ($b['status'] == 'confirmed'): ?>
+                                        <span
+                                            class="px-2 py-1 rounded text-[10px] font-bold bg-blue-100 text-blue-600 uppercase">Đã
+                                            xác nhận</span>
+                                    <?php elseif ($b['status'] == 'checked-in'): ?>
+                                        <span
+                                            class="px-2 py-1 rounded text-[10px] font-bold bg-indigo-100 text-indigo-600 uppercase">Đang
+                                            ở</span>
+                                    <?php elseif ($b['status'] == 'completed'): ?>
+                                        <span
+                                            class="px-2 py-1 rounded text-[10px] font-bold bg-emerald-100 text-emerald-600 uppercase">Hoàn
+                                            thành</span>
+                                    <?php elseif ($b['status'] == 'cancelled'): ?>
+                                        <span
+                                            class="px-2 py-1 rounded text-[10px] font-bold bg-red-100 text-red-600 uppercase">Đã
+                                            hủy</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="px-6 py-4 text-center space-x-1 whitespace-nowrap">
+                                    <?php if ($b['status'] == 'pending'): ?>
+                                        <form action="../actions/process_admin_booking.php" method="POST" class="inline">
+                                            <input type="hidden" name="action" value="update_status">
+                                            <input type="hidden" name="booking_id" value="<?= $b['booking_id'] ?>">
+                                            <button type="submit" name="status" value="confirmed"
+                                                class="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-[10px] uppercase font-bold hover:bg-blue-100 transition shadow-sm"
+                                                title="Duyệt đơn này"><i class="fa-solid fa-check"></i> Duyệt</button>
+                                            <button type="submit" name="status" value="cancelled"
+                                                onclick="return confirm('Bạn có chắc chắn muốn hủy đơn này?');"
+                                                class="bg-red-50 text-red-600 px-3 py-1.5 rounded-lg text-[10px] uppercase font-bold hover:bg-red-100 transition shadow-sm"
+                                                title="Hủy đơn"><i class="fa-solid fa-xmark"></i> Hủy</button>
+                                        </form>
+                                    <?php elseif ($b['status'] == 'confirmed'): ?>
+                                        <form action="../actions/process_admin_booking.php" method="POST" class="inline">
+                                            <input type="hidden" name="action" value="update_status">
+                                            <input type="hidden" name="booking_id" value="<?= $b['booking_id'] ?>">
+                                            <button type="submit" name="status" value="checked_in"
+                                                class="bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-lg text-[10px] uppercase font-bold hover:bg-indigo-100 transition shadow-sm"
+                                                title="Khách đã nhận phòng"><i class="fa-solid fa-key"></i> Nhận
+                                                phòng</button>
+                                            <button type="submit" name="status" value="cancelled"
+                                                onclick="return confirm('Bạn có chắc chắn muốn hủy đơn này?');"
+                                                class="bg-red-50 text-red-600 px-3 py-1.5 rounded-lg text-[10px] uppercase font-bold hover:bg-red-100 transition shadow-sm"
+                                                title="Hủy đơn"><i class="fa-solid fa-xmark"></i> Hủy</button>
+                                        </form>
+                                    <?php elseif ($b['status'] == 'checked-in'): ?>
+                                        <?php
                                         $data_js = htmlspecialchars(json_encode([
                                             'booking_id' => $b['booking_id'],
                                             'customer_name' => $b['full_name'] ?? $b['guest_name'] ?? 'Khách vãng lai',
@@ -335,17 +335,17 @@ $default_tab = ($search !== '') ? 'listTab' : 'mapTab';
                                             'type_name' => $b['type_name'] ?? '',
                                         ]), ENT_QUOTES, 'UTF-8');
                                         ?>
-                                <button type="button" onclick="openViewBookingModal(<?= $data_js ?>)"
-                                    class="bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-lg text-[10px] uppercase font-bold hover:bg-emerald-100 transition shadow-sm"
-                                    title="Tiến hành thanh toán & Trả phòng"><i class="fa-solid fa-money-bill-wave"></i>
-                                    Trả phòng</button>
-                                <?php endif; ?>
+                                        <button type="button" onclick="openViewBookingModal(<?= $data_js ?>)"
+                                            class="bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-lg text-[10px] uppercase font-bold hover:bg-emerald-100 transition shadow-sm"
+                                            title="Tiến hành thanh toán & Trả phòng"><i class="fa-solid fa-money-bill-wave"></i>
+                                            Trả phòng</button>
+                                    <?php endif; ?>
 
-                                <button type="button" onclick="openInvoiceModal(<?= $b['booking_id'] ?>)"
-                                    class="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] uppercase font-bold hover:bg-slate-200 transition shadow-sm"
-                                    title="Xem chi tiết Hóa đơn"><i class="fa-solid fa-file-invoice"></i></button>
-                            </td>
-                        </tr>
+                                    <button type="button" onclick="openInvoiceModal(<?= $b['booking_id'] ?>)"
+                                        class="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] uppercase font-bold hover:bg-slate-200 transition shadow-sm"
+                                        title="Xem chi tiết Hóa đơn"><i class="fa-solid fa-file-invoice"></i></button>
+                                </td>
+                            </tr>
                         <?php endforeach; ?>
                     </tbody>
                 </table>
@@ -377,48 +377,48 @@ $default_tab = ($search !== '') ? 'listTab' : 'mapTab';
     <script src="../assets/js/toast.js"></script>
     <script src="../assets/js/admin_bookings.js"></script>
     <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        let activeTab = urlParams.get('search') ? 'listTab' : (sessionStorage.getItem(
-            'adminBookingCurrentTab') || '<?php echo $default_tab; ?>');
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            let activeTab = urlParams.get('search') ? 'listTab' : (sessionStorage.getItem(
+                'adminBookingCurrentTab') || '<?php echo $default_tab; ?>');
 
-        const btnMap = document.getElementById('btn-mapTab');
-        const btnList = document.getElementById('btn-listTab');
+            const btnMap = document.getElementById('btn-mapTab');
+            const btnList = document.getElementById('btn-listTab');
 
-        if (activeTab === 'listTab') {
-            switchTab('listTab', btnList);
-        } else {
-            switchTab('mapTab', btnMap);
-        }
+            if (activeTab === 'listTab') {
+                switchTab('listTab', btnList);
+            } else {
+                switchTab('mapTab', btnMap);
+            }
 
-        btnMap.addEventListener('click', () => sessionStorage.setItem('adminBookingCurrentTab', 'mapTab'));
-        btnList.addEventListener('click', () => sessionStorage.setItem('adminBookingCurrentTab', 'listTab'));
+            btnMap.addEventListener('click', () => sessionStorage.setItem('adminBookingCurrentTab', 'mapTab'));
+            btnList.addEventListener('click', () => sessionStorage.setItem('adminBookingCurrentTab', 'listTab'));
 
-        if (urlParams.get('msg') === 'booking_created') showToast('Giao phòng thành công!', 'success');
-        if (urlParams.get('msg') === 'checkout_success') showToast('Trả phòng và thu tiền hoàn tất!',
-            'success');
-        if (urlParams.get('msg') === 'status_updated') showToast('Cập nhật trạng thái thành công!', 'success');
-        if (urlParams.get('msg') === 'room_ready') showToast('Phòng đã dọn dẹp xong và sẵn sàng đón khách!',
-            'success');
-        if (urlParams.get('error') === 'room_occupied') showToast(
-            'Lỗi: Phòng này đã bị đặt trong khoảng thời gian vừa chọn!', 'error');
-        if (urlParams.get('error') === 'duplicate_cccd') showToast(
-            'Lỗi: Số CCCD không được trùng lặp trong cùng một phòng!', 'error');
-        if (urlParams.get('error') === 'cccd_name_mismatch') showToast(
-            'Lỗi: CCCD đã tồn tại trong hệ thống nhưng sai tên Khách hàng!', 'error');
-        if (urlParams.get('error') === 'duplicate_phone') showToast(
-            'Lỗi: Số điện thoại này đã được sử dụng bởi khách hàng khác!', 'error');
-        if (urlParams.get('error') === 'missing_cccd') showToast(
-            'Lỗi: Bắt buộc phải nhập cả Tên và số CCCD cho tất cả khách hàng!', 'error');
-        if (urlParams.get('error') === 'missing_guest') showToast(
-            'Lỗi: Vui lòng nhập thông tin của ít nhất 1 khách hàng!', 'error');
-        if (urlParams.get('error') === 'booking_failed') showToast(
-            'Lỗi: Giao phòng thất bại do lỗi CSDL, vui lòng thử lại!', 'error');
-        if (urlParams.get('error') === 'room_not_ready') showToast(
-            'Lỗi: Phòng đang được sử dụng hoặc chưa sẵn sàng nhận khách hàng.', 'error');
-        if (urlParams.get('error') === 'too_early') showToast(
-            'Lỗi: Chưa tới giờ nhận phòng.', 'error');
-    });
+            if (urlParams.get('msg') === 'booking_created') showToast('Giao phòng thành công!', 'success');
+            if (urlParams.get('msg') === 'checkout_success') showToast('Trả phòng và thu tiền hoàn tất!',
+                'success');
+            if (urlParams.get('msg') === 'status_updated') showToast('Cập nhật trạng thái thành công!', 'success');
+            if (urlParams.get('msg') === 'room_ready') showToast('Phòng đã dọn dẹp xong và sẵn sàng đón khách!',
+                'success');
+            if (urlParams.get('error') === 'room_occupied') showToast(
+                'Lỗi: Phòng này đã bị đặt trong khoảng thời gian vừa chọn!', 'error');
+            if (urlParams.get('error') === 'duplicate_cccd') showToast(
+                'Lỗi: Số CCCD không được trùng lặp trong cùng một phòng!', 'error');
+            if (urlParams.get('error') === 'cccd_name_mismatch') showToast(
+                'Lỗi: CCCD đã tồn tại trong hệ thống nhưng sai tên Khách hàng!', 'error');
+            if (urlParams.get('error') === 'duplicate_phone') showToast(
+                'Lỗi: Số điện thoại này đã được sử dụng bởi khách hàng khác!', 'error');
+            if (urlParams.get('error') === 'missing_cccd') showToast(
+                'Lỗi: Bắt buộc phải nhập cả Tên và số CCCD cho tất cả khách hàng!', 'error');
+            if (urlParams.get('error') === 'missing_guest') showToast(
+                'Lỗi: Vui lòng nhập thông tin của ít nhất 1 khách hàng!', 'error');
+            if (urlParams.get('error') === 'booking_failed') showToast(
+                'Lỗi: Giao phòng thất bại do lỗi CSDL, vui lòng thử lại!', 'error');
+            if (urlParams.get('error') === 'room_not_ready') showToast(
+                'Lỗi: Phòng đang được sử dụng hoặc chưa sẵn sàng nhận khách hàng.', 'error');
+            if (urlParams.get('error') === 'too_early') showToast(
+                'Lỗi: Chưa tới giờ nhận phòng.', 'error');
+        });
     </script>
 
 </body>
