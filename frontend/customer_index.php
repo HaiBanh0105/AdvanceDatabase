@@ -2,6 +2,7 @@
 session_start();
 require_once '../dao/room_dao.php';
 require_once '../config/mongodb.php';
+require_once '../dao/booking_dao.php';
 
 // Xử lý Bộ lọc Tìm kiếm
 $search_in = $_GET['check_in'] ?? '';
@@ -56,6 +57,29 @@ $check_review = null;
 if (isset($_SESSION['user_id'])) {
     $check_review = $mongo_db->reviews->findOne(['user_id' => (int)$_SESSION['user_id']]);
     if ($check_review) $has_reviewed = true;
+}
+
+$pricing_config = get_pricing_config();
+
+$dynamic_multiplier_sum = 0;
+$duration_days = 0;
+
+if ($is_searched) {
+    $current_date = strtotime($search_in);
+    $end_date = strtotime($search_out);
+    while ($current_date < $end_date) {
+        $day_of_week = date('N', $current_date);
+        $date_md = date('d-m', $current_date);
+        if (in_array($date_md, $pricing_config['holidays'])) {
+            $dynamic_multiplier_sum += $pricing_config['holiday_multiplier'];
+        } elseif ($day_of_week == 6 || $day_of_week == 7) {
+            $dynamic_multiplier_sum += $pricing_config['weekend_multiplier'];
+        } else {
+            $dynamic_multiplier_sum += 1;
+        }
+        $duration_days++;
+        $current_date = strtotime('+1 day', $current_date);
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -174,11 +198,14 @@ if (isset($_SESSION['user_id'])) {
                                     class="mt-auto text-center w-full bg-slate-800 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-slate-900 transition active:scale-95">Chọn
                                     ngày để xem giá</a>
                             <?php else: ?>
-                                <?php $price_fmt = number_format($rt['price_per_day'], 0, ',', '.'); ?>
+                                <?php
+                                $total_dynamic_price = $rt['price_per_day'] * $dynamic_multiplier_sum;
+                                $price_fmt = number_format($total_dynamic_price, 0, ',', '.');
+                                ?>
                                 <button
-                                    onclick="openBookingModal(<?= $rt['type_id'] ?>, '<?= htmlspecialchars(addslashes($rt['name'])) ?>', <?= $rt['price_per_day'] ?>)"
+                                    onclick="openBookingModal(<?= $rt['type_id'] ?>, '<?= htmlspecialchars(addslashes($rt['name'])) ?>', <?= $rt['price_per_day'] ?>, <?= $rt['capacity'] ?>)"
                                     class="mt-auto w-full bg-indigo-600 text-white py-4 rounded-xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition active:scale-95">Đặt
-                                    phòng ngay • <?= $price_fmt ?>đ</button>
+                                    ngay • <?= $price_fmt ?>đ / <?= $duration_days ?> đêm</button>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -209,9 +236,11 @@ if (isset($_SESSION['user_id'])) {
 
     <script src="../assets/js/toast.js"></script>
     <script>
-        // Biến toàn cục để lưu Tên Phòng đang chọn
+        // Lấy cấu hình giá từ Backend
+        const pricingConfig = <?php echo json_encode($pricing_config); ?>;
+
         let currentRoomName = '';
-        let baseTotalPrice = 0; // Lưu giá gốc để tính toán giảm giá
+        let baseTotalPrice = 0;
 
         document.addEventListener('DOMContentLoaded', () => {
             let hasParams = false;
@@ -280,7 +309,9 @@ if (isset($_SESSION['user_id'])) {
             }
         });
 
-        function openBookingModal(typeId, name, priceDay) {
+        let currentRoomCapacity = 0;
+
+        function openBookingModal(typeId, name, priceDay, capacity) {
             <?php if (!isset($_SESSION['user_id'])): ?>
                 window.location.href = 'login.php';
                 return;
@@ -289,6 +320,10 @@ if (isset($_SESSION['user_id'])) {
             document.getElementById('cb_type_id').value = typeId;
             document.getElementById('cb_price_per_day').value = priceDay;
             currentRoomName = name;
+            currentRoomCapacity = capacity;
+
+            const guestList = document.getElementById('customerGuestList');
+            if (guestList) guestList.innerHTML = '';
 
             document.getElementById('customerBookingModal').classList.remove('hidden');
             document.getElementById('customerBookingModal').classList.add('flex');
@@ -323,6 +358,31 @@ if (isset($_SESSION['user_id'])) {
                 });
         }
 
+        function addCustomerGuestRow() {
+            const list = document.getElementById('customerGuestList');
+            if (list.children.length >= currentRoomCapacity - 1) {
+                showToast('Đã đạt giới hạn số người tối đa cho hạng phòng này!', 'warning');
+                return;
+            }
+
+            const index = Date.now();
+
+            const html = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl relative" id="cb_g_row_${index}">
+                <button type="button" onclick="document.getElementById('cb_g_row_${index}').remove()" class="absolute -top-2 -right-2 bg-rose-100 text-rose-500 w-6 h-6 rounded-full flex items-center justify-center hover:bg-rose-500 hover:text-white transition shadow-sm"><i class="fa-solid fa-xmark text-[10px]"></i></button>
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-1.5">Số CCCD *</label>
+                    <input type="text" name="guests[${index}][cccd]" required pattern="\\d{12}" title="Vui lòng nhập 12 số CCCD" onchange="checkCCCD_Customer(this, ${index})" placeholder="12 chữ số" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-1.5">Họ và Tên *</label>
+                    <input type="text" name="guests[${index}][name]" id="g_name_${index}" required class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                </div>
+            </div>
+        `;
+            list.insertAdjacentHTML('beforeend', html);
+        }
+
         // Chuyển sang Bước 2 (Kiểm tra form trước)
         function goToStep2() {
             const form = document.getElementById('customerBookingForm');
@@ -331,10 +391,26 @@ if (isset($_SESSION['user_id'])) {
             // Tính toán tổng tiền
             const checkInDate = new Date('<?= $search_in ?>');
             const checkOutDate = new Date('<?= $search_out ?>');
-            const diffTime = Math.abs(checkOutDate - checkInDate);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             const priceDay = parseInt(document.getElementById('cb_price_per_day').value);
-            baseTotalPrice = (diffDays > 0 ? diffDays : 1) * priceDay;
+
+            baseTotalPrice = 0;
+            let currentDate = new Date(checkInDate);
+
+            while (currentDate < checkOutDate) {
+                let dayOfWeek = currentDate.getDay(); // 0: Chủ Nhật, 6: Thứ Bảy
+                let dateMD = String(currentDate.getDate()).padStart(2, '0') + '-' + String(currentDate.getMonth() + 1)
+                    .padStart(2, '0');
+
+                if (pricingConfig.holidays.includes(dateMD)) {
+                    baseTotalPrice += priceDay * pricingConfig.holiday_multiplier;
+                } else if (dayOfWeek === 0 || dayOfWeek === 6) {
+                    baseTotalPrice += priceDay * pricingConfig.weekend_multiplier;
+                } else {
+                    baseTotalPrice += priceDay;
+                }
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            if (baseTotalPrice === 0) baseTotalPrice = priceDay;
 
             document.getElementById('conf_room_name').innerText = currentRoomName;
             document.getElementById('conf_total_price').innerText = new Intl.NumberFormat('vi-VN').format(baseTotalPrice) +

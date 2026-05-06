@@ -14,8 +14,33 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $booking_id = (int)$_POST['booking_id'];
         $status     = trim($_POST['status']);
 
+        if ($status === 'checked_in') {
+            $sql_check = "SELECT b.check_in_planned, r.status as room_status 
+                          FROM Booking b 
+                          JOIN Booking_detail bd ON b.booking_id = bd.booking_id 
+                          JOIN Room r ON bd.room_id = r.room_id 
+                          WHERE b.booking_id = ?";
+            $check_info = db_query_one($sql_check, $booking_id);
+
+            if ($check_info) {
+                if ($check_info['room_status'] !== 'available') {
+                    header("Location: ../frontend/admin_bookings.php?error=room_not_ready");
+                    exit();
+                }
+
+                $earliest_checkin = strtotime('-2 hours', strtotime($check_info['check_in_planned']));
+                if (time() < $earliest_checkin) {
+                    header("Location: ../frontend/admin_bookings.php?error=too_early");
+                    exit();
+                }
+            }
+        }
+
         $ok = booking_update_status($booking_id, $status);
         if ($ok) {
+            if ($status === 'checked_in') {
+                db_execute("UPDATE Booking_detail SET actual_check_in = ? WHERE booking_id = ?", date('Y-m-d H:i:s'), $booking_id);
+            }
             header("Location: ../frontend/admin_bookings.php?msg=status_updated");
         } else {
             header("Location: ../frontend/admin_bookings.php?error=invalid_status");
@@ -46,13 +71,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         } else {
             $checkout_date = date('Y-m-d', strtotime("+$duration days", strtotime($check_in)));
             $check_out     = date('Y-m-d H:i:s', strtotime($checkout_date . ' ' . sprintf('%02d:00:00', HOTEL_STANDARD_CHECKOUT_HOUR)));
-            $base_price    = $duration * $room_info['price_per_day'];
-            $unit_price    = $room_info['price_per_day'];
-        }
 
-        if (!booking_is_room_available($room_id, $check_in, $check_out)) {
-            header("Location: ../frontend/admin_bookings.php?error=room_occupied");
-            exit();
+            $base_price = 0;
+            $current_date = strtotime(date('Y-m-d', strtotime($check_in)));
+
+            $pricing_config = get_pricing_config();
+            $holidays = $pricing_config['holidays'];
+
+            for ($i = 0; $i < $duration; $i++) {
+                $day_of_week = date('N', $current_date);
+                $date_md = date('d-m', $current_date);
+                if (in_array($date_md, $holidays)) {
+                    $base_price += $room_info['price_per_day'] * $pricing_config['holiday_multiplier'];
+                } elseif ($day_of_week == 6 || $day_of_week == 7) {
+                    $base_price += $room_info['price_per_day'] * $pricing_config['weekend_multiplier'];
+                } else {
+                    $base_price += $room_info['price_per_day'];
+                }
+                $current_date = strtotime('+1 day', $current_date);
+            }
+            $unit_price    = $room_info['price_per_day'];
         }
 
         if ($guest_phone !== '') {
@@ -97,7 +135,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
 
         $ok = booking_create_admin_walkin($_SESSION['user_id'], $room_id, $check_in, $check_out, $base_price, $unit_price, $guests, $rep_index, $guest_phone);
-        if ($ok) {
+
+        if ($ok === 'ROOM_OCCUPIED') {
+            header("Location: ../frontend/admin_bookings.php?error=room_occupied");
+            exit();
+        } elseif ($ok) {
             header("Location: ../frontend/admin_bookings.php?msg=booking_created");
         } else {
             header("Location: ../frontend/admin_bookings.php?error=booking_failed");
@@ -149,10 +191,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $diff           = $now - $exp_out;
                 $overtime_hours = ceil($diff / 3600);
 
-                if (($booking['rental_type'] ?? '') === 'daily' && $overtime_hours >= HOTEL_MAX_OVERTIME_HOURS) {
+                $overtime_fee = $overtime_hours * (float)($booking['price_per_hour'] ?? 0);
+                if ($overtime_fee > (float)($booking['price_per_day'] ?? 0)) {
                     $overtime_fee = (float)($booking['price_per_day'] ?? 0);
-                } else {
-                    $overtime_fee = $overtime_hours * (float)($booking['price_per_hour'] ?? 0);
                 }
             }
 
@@ -191,6 +232,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             echo json_encode(['status' => 'not_found']);
         }
         exit();
+    } elseif ($action === 'get_room_timeline') {
+        ob_start();
+        try {
+            $room_id = (int)$_GET['room_id'];
+            $sql = "SELECT b.check_in_planned as check_in, b.check_out_planned as check_out, b.booking_status as status, c.full_name 
+                    FROM Booking_detail bd 
+                    JOIN Booking b ON bd.booking_id = b.booking_id 
+                    LEFT JOIN Customer c ON b.customer_id = c.customer_id
+                    WHERE bd.room_id = ? AND b.booking_status NOT IN ('cancelled', 'completed') 
+                    ORDER BY b.check_in_planned ASC";
+            $timeline = db_query($sql, $room_id);
+            ob_end_clean();
+            header('Content-Type: application/json');
+            echo json_encode($timeline ?: []);
+            exit();
+        } catch (\Throwable $th) {
+            ob_end_clean();
+            echo json_encode(['error' => 'Server Exception']);
+            exit();
+        }
     } elseif ($action === 'get_invoice') {
         ob_start();
         try {
@@ -207,17 +268,33 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     if ($now > $exp_out) {
                         $diff           = $now - $exp_out;
                         $overtime_hours = ceil($diff / 3600);
-                        if (($booking['rental_type'] ?? '') === 'daily' && $overtime_hours >= HOTEL_MAX_OVERTIME_HOURS) {
+                        $overtime_fee = $overtime_hours * (float)$booking['price_per_hour'];
+                        if ($overtime_fee > (float)$booking['price_per_day']) {
                             $overtime_fee = (float)$booking['price_per_day'];
-                        } else {
-                            $overtime_fee = $overtime_hours * (float)$booking['price_per_hour'];
                         }
                     }
+                    $booking['base_price'] = (float)$booking['total_price'];
+                    $booking['overtime_hours'] = $overtime_hours;
                     $booking['overtime_fee'] = $overtime_fee;
                     $booking['final_total'] = (float)$booking['total_price'] + $overtime_fee;
                     $booking['is_estimated'] = true;
                 } else {
-                    $booking['overtime_fee'] = 0;
+                    $overtime_fee = 0;
+                    $overtime_hours = 0;
+                    if ($booking['status'] === 'completed' && !empty($booking['actual_check_out'])) {
+                        $exp_out = strtotime($booking['check_out']);
+                        $act_out = strtotime($booking['actual_check_out']);
+                        if ($act_out > $exp_out) {
+                            $overtime_hours = ceil(($act_out - $exp_out) / 3600);
+                            $overtime_fee = $overtime_hours * (float)$booking['price_per_hour'];
+                            if ($overtime_fee > (float)$booking['price_per_day']) {
+                                $overtime_fee = (float)$booking['price_per_day'];
+                            }
+                        }
+                    }
+                    $booking['base_price'] = (float)$booking['total_price'] - $overtime_fee;
+                    $booking['overtime_hours'] = $overtime_hours;
+                    $booking['overtime_fee'] = $overtime_fee;
                     $booking['final_total'] = (float)$booking['total_price'];
                     $booking['is_estimated'] = false;
                 }

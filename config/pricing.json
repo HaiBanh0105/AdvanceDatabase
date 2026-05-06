@@ -1,0 +1,11 @@
+{
+    "weekend_multiplier": 1.2,
+    "holiday_multiplier": 1.5,
+    "holidays": [
+        "01-01",
+        "30-04",
+        "01-05",
+        "02-09",
+        "31-12"
+    ]
+}

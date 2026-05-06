@@ -28,9 +28,15 @@
                 <span class="text-slate-500">Tiền phòng (Dự kiến)</span>
                 <span class="font-bold text-slate-800" id="co_base_price"></span>
             </div>
-            <div id="co_overtime_box" class="flex justify-between items-center text-rose-600 hidden">
-                <span>Phụ thu lố giờ (<span id="co_overtime_hrs"></span> tiếng)</span>
-                <span class="font-bold" id="co_overtime_fee"></span>
+            <div id="co_overtime_box" class="hidden flex-col gap-2 pt-3">
+                <div class="flex justify-between items-center text-rose-600">
+                    <span class="font-bold">Phụ phí phát sinh</span>
+                    <span class="font-bold text-lg" id="co_overtime_fee"></span>
+                </div>
+                <div class="text-[11px] text-slate-500 bg-rose-50 p-3 rounded-xl border border-rose-100">
+                    <p class="font-bold text-slate-700 mb-1"><i class="fa-solid fa-circle-info text-rose-500 mr-1"></i> Chi tiết: Khách trả phòng lố <span id="co_overtime_hrs" class="text-rose-600"></span> tiếng.</p>
+                    <p class="italic text-[10px]">* Phụ phí được hệ thống tính tự động dựa trên đơn giá theo giờ của phòng.</p>
+                </div>
             </div>
 
             <div class="flex justify-between items-center pt-4 border-t border-slate-200 mt-4">

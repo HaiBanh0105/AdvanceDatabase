@@ -15,6 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $id_number = trim($_POST['id_number'] ?? '');
     $nation = trim($_POST['nation'] ?? '');
     $address = trim($_POST['address'] ?? '');
+    $dob = trim($_POST['dob'] ?? '');
 
     if (!preg_match('/^\d{12}$/', $id_number)) {
         header("Location: ../frontend/customer_profile.php?error=invalid_id");
@@ -45,23 +46,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ($my_customer_id) {
             // Case 1: The user's account is already linked to a customer record. Update it.
             db_execute(
-                "UPDATE Customer SET full_name = ?, phone = ?, cccd = ?, nation = ?, address = ? WHERE customer_id = ?",
+                "UPDATE Customer SET full_name = ?, phone = ?, cccd = ?, nation = ?, address = ?, dob = ? WHERE customer_id = ?",
                 $full_name,
                 $phone,
                 $id_number,
                 $nation,
                 $address,
+                $dob,
                 $my_customer_id
             );
         } else if ($existing_walkin_customer_id) {
             // Case 2: New account, but CCCD matches an existing walk-in customer.
             // Update the walk-in customer's info and link the account to it.
             db_execute(
-                "UPDATE Customer SET full_name = ?, phone = ?, nation = ?, address = ?, email = (SELECT email FROM Account WHERE account_id = ?) WHERE customer_id = ?",
+                "UPDATE Customer SET full_name = ?, phone = ?, nation = ?, address = ?, dob = ?, email = (SELECT email FROM Account WHERE account_id = ?) WHERE customer_id = ?",
                 $full_name,
                 $phone,
                 $nation,
                 $address,
+                $dob,
                 $user_id,
                 $existing_walkin_customer_id
             );
@@ -70,12 +73,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         } else {
             // Case 3: New account and new CCCD. Insert a new customer record.
             db_execute(
-                "INSERT INTO Customer (full_name, phone, cccd, nation, address, email) VALUES (?, ?, ?, ?, ?, (SELECT email FROM Account WHERE account_id = ?))",
+                "INSERT INTO Customer (full_name, phone, cccd, nation, address, dob, email) VALUES (?, ?, ?, ?, ?, ?, (SELECT email FROM Account WHERE account_id = ?))",
                 $full_name,
                 $phone,
                 $id_number,
                 $nation,
                 $address,
+                $dob,
                 $user_id
             );
             // Get the new customer_id and link the account to it.

@@ -7,7 +7,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
 require_once '../dao/room_dao.php';
 require_once '../dao/booking_dao.php';
 
-// 1. Báo cáo tổng quan
 $total_revenue = db_query_value("SELECT SUM(total_price) FROM Booking WHERE booking_status = 'completed'") ?: 0;
 $total_bookings = db_query_value("SELECT COUNT(*) FROM Booking") ?: 0;
 $today_bookings = db_query_value("SELECT COUNT(*) FROM Booking WHERE CAST(booking_date AS DATE) = CAST(GETDATE() AS DATE)") ?: 0;
@@ -16,18 +15,14 @@ $total_rooms = db_query_value("SELECT COUNT(*) FROM Room") ?: 0;
 $occupied_rooms = db_query_value("SELECT COUNT(*) FROM Room WHERE status = 'occupied'") ?: 0;
 $occupancy_rate = $total_rooms > 0 ? round(($occupied_rooms / $total_rooms) * 100) : 0;
 
-// Lấy doanh thu tháng này
 $this_month_revenue = db_query_value("SELECT SUM(total_price) FROM Booking WHERE booking_status = 'completed' AND MONTH(booking_date) = MONTH(GETDATE()) AND YEAR(booking_date) = YEAR(GETDATE())") ?: 0;
 
-// 2. Danh sách Hạng phòng
 $room_types = room_type_get_all('price ASC');
 
-// 3. Danh sách Phòng
 $rooms = db_query("SELECT room_number, status FROM Room ORDER BY room_number ASC");
 
 ?>
 <!DOCTYPE html>
-<!-- Giao diện Tổng quan Admin -->
 <html lang="vi">
 
 <head>
@@ -38,7 +33,7 @@ $rooms = db_query("SELECT room_number, status FROM Room ORDER BY room_number ASC
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 
-<body class="bg-slate-50 flex">
+<body class="bg-slate-50 flex h-screen overflow-hidden">
 
     <?php include 'sidebar_admin.php'; ?>
 
@@ -97,28 +92,28 @@ $rooms = db_query("SELECT room_number, status FROM Room ORDER BY room_number ASC
                 </thead>
                 <tbody class="divide-y divide-slate-50">
                     <?php if (empty($room_types)): ?>
-                        <tr>
-                            <td colspan="5" class="px-6 py-4 text-center text-slate-400">Chưa có hạng phòng nào</td>
-                        </tr>
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-slate-400">Chưa có hạng phòng nào</td>
+                    </tr>
                     <?php else: ?>
-                        <?php foreach ($room_types as $rt): ?>
-                            <tr class="hover:bg-slate-50/50 transition">
-                                <td class="px-6 py-4 font-bold text-slate-700"><?= htmlspecialchars($rt['name']) ?></td>
-                                <td class="px-6 py-4 text-slate-500"><?= $rt['capacity'] ?> người</td>
-                                <td class="px-6 py-4 font-bold text-indigo-600 uppercase">
-                                    <?= number_format($rt['price_per_day'], 0, ',', '.') ?>đ</td>
-                                <td class="px-6 py-4">
-                                    <span
-                                        class="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-[10px] font-bold">ĐANG
-                                        BÁN</span>
-                                </td>
-                                <td class="px-6 py-4 text-right">
-                                    <a href="admin_rooms.php?tab=types"
-                                        class="text-slate-400 hover:text-indigo-600 transition p-2"><i
-                                            class="fa-solid fa-pen"></i></a>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
+                    <?php foreach ($room_types as $rt): ?>
+                    <tr class="hover:bg-slate-50/50 transition">
+                        <td class="px-6 py-4 font-bold text-slate-700"><?= htmlspecialchars($rt['name']) ?></td>
+                        <td class="px-6 py-4 text-slate-500"><?= $rt['capacity'] ?> người</td>
+                        <td class="px-6 py-4 font-bold text-indigo-600 uppercase">
+                            <?= number_format($rt['price_per_day'], 0, ',', '.') ?>đ</td>
+                        <td class="px-6 py-4">
+                            <span
+                                class="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-[10px] font-bold">ĐANG
+                                BÁN</span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <a href="admin_rooms.php?tab=types"
+                                class="text-slate-400 hover:text-indigo-600 transition p-2"><i
+                                    class="fa-solid fa-pen"></i></a>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
                     <?php endif; ?>
                 </tbody>
             </table>
@@ -130,7 +125,7 @@ $rooms = db_query("SELECT room_number, status FROM Room ORDER BY room_number ASC
             </div>
             <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 p-6">
                 <?php foreach ($rooms as $r): ?>
-                    <?php
+                <?php
                     $status_class = '';
                     $status_text = '';
                     if ($r['status'] == 'available') {
@@ -147,24 +142,24 @@ $rooms = db_query("SELECT room_number, status FROM Room ORDER BY room_number ASC
                         $status_text = 'Bảo trì';
                     }
                     ?>
+                <div
+                    class="border border-slate-200 rounded-xl p-4 text-center hover:border-indigo-500 transition cursor-pointer group <?= $r['status'] != 'available' ? 'bg-slate-50' : '' ?>">
+                    <p class="text-xs font-bold text-slate-400 mb-1">PHÒNG</p>
+                    <h4
+                        class="text-xl font-black <?= $r['status'] == 'available' ? 'text-slate-800 group-hover:text-indigo-600' : 'text-slate-400' ?>">
+                        <?= htmlspecialchars($r['room_number']) ?></h4>
                     <div
-                        class="border border-slate-200 rounded-xl p-4 text-center hover:border-indigo-500 transition cursor-pointer group <?= $r['status'] != 'available' ? 'bg-slate-50' : '' ?>">
-                        <p class="text-xs font-bold text-slate-400 mb-1">PHÒNG</p>
-                        <h4
-                            class="text-xl font-black <?= $r['status'] == 'available' ? 'text-slate-800 group-hover:text-indigo-600' : 'text-slate-400' ?>">
-                            <?= htmlspecialchars($r['room_number']) ?></h4>
-                        <div
-                            class="mt-2 inline-block <?= $status_class ?> px-2 py-0.5 rounded text-[9px] font-bold uppercase">
-                            <?= $status_text ?></div>
-                    </div>
+                        class="mt-2 inline-block <?= $status_class ?> px-2 py-0.5 rounded text-[9px] font-bold uppercase">
+                        <?= $status_text ?></div>
+                </div>
                 <?php endforeach; ?>
             </div>
         </div>
     </main>
 
     <script>
-        // JS xử lý các tương tác nhanh
-        console.log("Admin Dashboard Loaded");
+    // JS xử lý các tương tác nhanh
+    console.log("Admin Dashboard Loaded");
     </script>
 </body>
 

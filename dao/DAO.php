@@ -5,6 +5,9 @@ require_once('../config/pdo.php');
 // Định nghĩa tên DB chính xác DỰA TRÊN CẤU TRÚC THỰC TẾ CỦA BẠN
 const DB_NAME = 'hotel_management_db';
 
+// Cài đặt múi giờ mặc định cho toàn hệ thống để hàm time() và date() khớp với giờ Việt Nam
+date_default_timezone_set('Asia/Ho_Chi_Minh');
+
 // ------------------------------------
 // Phần 1: WRAPPER PDO (DAO Adapter)
 // ------------------------------------
@@ -49,6 +52,3 @@ function db_query_value($sql)
 // ------------------------------------
 // Phần 2: HÀM NGHIỆP VỤ (BUSINESS LOGIC)
 // ------------------------------------
-
-
-

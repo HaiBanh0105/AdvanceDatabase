@@ -13,6 +13,18 @@
             <input type="hidden" name="action" value="create_walkin">
             <input type="hidden" name="room_id" id="wi_room_id">
 
+            <!-- LỊCH TRỐNG PHÒNG (TIMELINE) -->
+            <div>
+                <h4
+                    class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                    <i class="fa-solid fa-timeline"></i> Lịch đặt trước của phòng này
+                </h4>
+                <div id="wi_timeline_container" class="flex gap-3 overflow-x-auto pb-2"
+                    style="scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent;">
+                    <div class="text-xs text-slate-400 italic">Đang tải dữ liệu...</div>
+                </div>
+            </div>
+
             <div class="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 grid grid-cols-2 gap-4">
                 <div class="col-span-2">
                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Hình
@@ -78,3 +90,81 @@
         </form>
     </div>
 </div>
+
+<script>
+    function loadRoomTimeline(roomId) {
+        const container = document.getElementById('wi_timeline_container');
+        container.innerHTML =
+            '<div class="text-xs text-slate-400 italic"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Đang tải dữ liệu...</div>';
+
+        fetch(`../actions/process_admin_booking.php?action=get_room_timeline&room_id=${roomId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.error || !data || data.length === 0) {
+                    container.innerHTML =
+                        '<div class="px-3 py-2.5 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-bold border border-emerald-100 w-full"><i class="fa-solid fa-check-circle mr-1"></i> Phòng hiện đang hoàn toàn trống, không có lịch hẹn trước.</div>';
+                    return;
+                }
+
+                let html = '';
+                data.forEach(item => {
+                    const checkIn = new Date(item.check_in);
+                    const checkOut = new Date(item.check_out);
+
+                    const inStr = checkIn.toLocaleTimeString('vi-VN', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }) + ' ' + checkIn.toLocaleDateString('vi-VN', {
+                        day: '2-digit',
+                        month: '2-digit'
+                    });
+                    const outStr = checkOut.toLocaleTimeString('vi-VN', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }) + ' ' + checkOut.toLocaleDateString('vi-VN', {
+                        day: '2-digit',
+                        month: '2-digit'
+                    });
+
+                    let statusColor = item.status === 'checked-in' ?
+                        'bg-indigo-100 text-indigo-700 border-indigo-200' :
+                        'bg-amber-100 text-amber-700 border-amber-200';
+                    let statusIcon = item.status === 'checked-in' ? 'fa-person-shelter' : 'fa-calendar-check';
+                    let statusText = item.status === 'checked-in' ? 'Đang lưu trú' : 'Khách hẹn trước';
+
+                    html += `
+                <div class="flex-shrink-0 w-48 p-3 rounded-xl border ${statusColor} relative shadow-sm">
+                    <p class="text-[10px] font-black uppercase mb-1.5 flex items-center gap-1.5"><i class="fa-solid ${statusIcon}"></i> ${statusText}</p>
+                    <p class="text-xs font-bold truncate mb-2 text-slate-800" title="${item.full_name || 'Khách hàng'}">${item.full_name || 'Khách vãng lai'}</p>
+                    <div class="text-[10px] font-medium space-y-1 text-slate-600">
+                        <p class="bg-white/50 px-2 py-1 rounded"><span class="opacity-75">IN:</span> <b class="float-right">${inStr}</b></p>
+                        <p class="bg-white/50 px-2 py-1 rounded"><span class="opacity-75">OUT:</span> <b class="float-right">${outStr}</b></p>
+                    </div>
+                </div>`;
+                });
+                container.innerHTML = html;
+            })
+            .catch(err => {
+                container.innerHTML =
+                    '<div class="text-xs text-rose-500 italic"><i class="fa-solid fa-circle-exclamation mr-1"></i> Không thể tải dữ liệu lịch phòng</div>';
+            });
+    }
+
+    // Ghi đè thuộc tính 'value' của thẻ input hidden để tự động kích hoạt loadRoomTimeline mỗi khi JS đổ room_id vào
+    document.addEventListener('DOMContentLoaded', () => {
+        const roomIdInput = document.getElementById('wi_room_id');
+        if (roomIdInput) {
+            const originalSet = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+            Object.defineProperty(roomIdInput, 'value', {
+                set(val) {
+                    originalSet.call(this, val);
+                    if (val) loadRoomTimeline(val);
+                },
+                get() {
+                    return Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')
+                        .get.call(this);
+                }
+            });
+        }
+    });
+</script>

@@ -414,6 +414,10 @@ $default_tab = ($search !== '') ? 'listTab' : 'mapTab';
             'Lỗi: Vui lòng nhập thông tin của ít nhất 1 khách hàng!', 'error');
         if (urlParams.get('error') === 'booking_failed') showToast(
             'Lỗi: Giao phòng thất bại do lỗi CSDL, vui lòng thử lại!', 'error');
+        if (urlParams.get('error') === 'room_not_ready') showToast(
+            'Lỗi: Phòng đang được sử dụng hoặc chưa sẵn sàng nhận khách hàng.', 'error');
+        if (urlParams.get('error') === 'too_early') showToast(
+            'Lỗi: Chưa tới giờ nhận phòng.', 'error');
     });
     </script>
 

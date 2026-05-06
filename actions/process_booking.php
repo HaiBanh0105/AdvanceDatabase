@@ -106,14 +106,37 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         $available_room = booking_find_available_room($type_id, $check_in, $check_out);
 
+        //Uncomment để Debug
+        //sleep(5);
+
         if (!$available_room) {
             $conn->rollBack();
             echo json_encode(['status' => 'error', 'message' => 'Xin lỗi, không còn phòng trống trong khoảng thời gian này!']);
             exit();
         }
 
-        $nights      = max(1, ceil((strtotime($check_out) - strtotime($check_in)) / 86400));
-        $total_price = $available_room['price_per_day'] * $nights;
+        $total_price = 0;
+        $current_date = strtotime(date('Y-m-d', strtotime($check_in)));
+        $end_date = strtotime(date('Y-m-d', strtotime($check_out)));
+
+        // Lấy cấu hình giá động
+        $pricing_config = get_pricing_config();
+        $holidays = $pricing_config['holidays'];
+
+        while ($current_date < $end_date) {
+            $day_of_week = date('N', $current_date); // 1 = Thứ 2, ..., 7 = Chủ nhật
+            $date_md = date('d-m', $current_date);
+
+            if (in_array($date_md, $holidays)) {
+                $total_price += $available_room['price_per_day'] * $pricing_config['holiday_multiplier'];
+            } elseif ($day_of_week == 6 || $day_of_week == 7) {
+                $total_price += $available_room['price_per_day'] * $pricing_config['weekend_multiplier'];
+            } else {
+                $total_price += $available_room['price_per_day'];
+            }
+            $current_date = strtotime('+1 day', $current_date);
+        }
+        if ($total_price == 0) $total_price = $available_room['price_per_day'];
 
         // Xử lý áp dụng mã giảm giá (Nếu có)
         $applied_promo_id = null;

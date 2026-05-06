@@ -22,8 +22,9 @@ CREATE TABLE Customer (
     cccd VARCHAR(50) UNIQUE,
     phone VARCHAR(20),
     email NVARCHAR(255),
+    dob DATE,
     address NVARCHAR(500),
-    nation NVARCHAR(100) DEFAULT N'Việt Nam'v,
+    nation NVARCHAR(100) DEFAULT N'Việt Nam',
     created_at DATETIME DEFAULT GETDATE()
 );
 
@@ -117,6 +118,71 @@ CREATE TABLE Booking_guests (
     FOREIGN KEY (detail_id) REFERENCES Booking_detail(detail_id) ON DELETE CASCADE,
     FOREIGN KEY (customer_id) REFERENCES Customer(customer_id)
 );
+GO
+
+-- TRIGGER
+CREATE TRIGGER trg_SyncRoomStatus
+ON Booking
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    -- Chỉ chạy Trigger khi có sự thay đổi trên cột booking_status
+    IF UPDATE(booking_status)
+    BEGIN
+        -- Đổi sang 'occupied' khi Khách Online đến Check-in
+        UPDATE r SET r.status = 'occupied'
+        FROM Room r
+        JOIN Booking_detail bd ON r.room_id = bd.room_id
+        JOIN inserted i ON bd.booking_id = i.booking_id
+        JOIN deleted d ON bd.booking_id = d.booking_id
+        WHERE i.booking_status = 'checked-in' AND d.booking_status <> 'checked-in';
+
+        -- Đổi sang 'available' khi Hủy đơn (cancelled)
+        UPDATE r SET r.status = 'available'
+        FROM Room r
+        JOIN Booking_detail bd ON r.room_id = bd.room_id
+        JOIN inserted i ON bd.booking_id = i.booking_id
+        JOIN deleted d ON bd.booking_id = d.booking_id
+        WHERE i.booking_status = 'cancelled' AND d.booking_status <> 'cancelled';
+
+        -- Đổi sang 'cleaning' khi Trả phòng (completed)
+        UPDATE r SET r.status = 'cleaning'
+        FROM Room r
+        JOIN Booking_detail bd ON r.room_id = bd.room_id
+        JOIN inserted i ON bd.booking_id = i.booking_id
+        JOIN deleted d ON bd.booking_id = d.booking_id
+        WHERE i.booking_status = 'completed' AND d.booking_status <> 'completed';
+    END
+END;
+GO
+
+-- PROCEDURE
+CREATE PROCEDURE sp_ProcessCheckout
+    @booking_id INT,
+    @actual_checkout DATETIME,
+    @final_total DECIMAL(15,2)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        -- Cập nhật hóa đơn chính
+        UPDATE Booking SET booking_status = 'completed', total_price = @final_total, payment_status = 'paid' 
+        WHERE booking_id = @booking_id;
+
+        -- Cập nhật chi tiết giờ ra
+        UPDATE Booking_detail SET actual_check_out = @actual_checkout 
+        WHERE booking_id = @booking_id;
+
+        -- Không cần cập nhật Room vì Trigger trg_SyncRoomStatus ở trên sẽ tự động được kích hoạt
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END;
 GO
 
 -- 1. Thêm nhân viên

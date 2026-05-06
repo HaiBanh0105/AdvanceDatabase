@@ -201,7 +201,13 @@ function proceedToCheckout() {
 
     if (d.overtime_fee > 0) {
         document.getElementById('co_overtime_box').classList.remove('hidden');
-        document.getElementById('co_overtime_hrs').innerText = d.overtime_hours;
+        
+        let formula = `${d.overtime_hours} giờ x ${new Intl.NumberFormat('vi-VN').format(d.price_per_hour)}đ/giờ`;
+        if (d.overtime_fee === d.price_per_day) {
+            formula = `${d.overtime_hours} giờ (Tối đa 1 ngày: ${new Intl.NumberFormat('vi-VN').format(d.price_per_day)}đ)`;
+        }
+        
+        document.getElementById('co_overtime_hrs').innerText = formula;
         document.getElementById('co_overtime_fee').innerText = '+' + new Intl.NumberFormat('vi-VN').format(d.overtime_fee) + 'đ';
     } else {
         document.getElementById('co_overtime_box').classList.add('hidden');
@@ -264,17 +270,21 @@ function openInvoiceModal(bookingId) {
             
             // Render Thời gian và Số tiền
             document.getElementById('inv_in').innerText = data.check_in;
-            document.getElementById('inv_out').innerText = data.is_estimated ? data.check_out + ' (Dự kiến)' : data.check_out;
+            document.getElementById('inv_out').innerText = data.is_estimated ? data.check_out + ' (Dự kiến)' : (data.actual_check_out || data.check_out);
             
-            document.getElementById('inv_base_price_label').innerText = data.is_estimated ? 'Tiền phòng dự kiến' : 'Tiền phòng (Bao gồm phụ thu)';
-            document.getElementById('inv_base_price').innerText = new Intl.NumberFormat('vi-VN').format(data.total_price) + 'đ';
+            document.getElementById('inv_base_price_label').innerText = data.is_estimated ? 'Tiền phòng dự kiến' : 'Tiền phòng gốc';
+            document.getElementById('inv_base_price').innerText = new Intl.NumberFormat('vi-VN').format(data.base_price) + 'đ';
             
-            if (data.is_estimated && data.overtime_fee > 0) {
+            if (data.overtime_fee > 0) {
                 document.getElementById('inv_overtime_fee').innerText = '+' + new Intl.NumberFormat('vi-VN').format(data.overtime_fee) + 'đ';
-                document.getElementById('inv_overtime_note').innerText = '(Quá giờ)';
-            } else if (!data.is_estimated) {
-                document.getElementById('inv_overtime_fee').innerText = 'Đã bao gồm';
-                document.getElementById('inv_overtime_note').innerText = '';
+                
+                let note = '';
+                if (data.overtime_fee === data.price_per_day) {
+                    note = `(Quá ${data.overtime_hours} giờ - Phụ thu tối đa 1 ngày)`;
+                } else {
+                    note = `(Quá ${data.overtime_hours} giờ x ${new Intl.NumberFormat('vi-VN').format(data.price_per_hour)}đ)`;
+                }
+                document.getElementById('inv_overtime_note').innerText = note;
             } else {
                 document.getElementById('inv_overtime_fee').innerText = '0đ';
                 document.getElementById('inv_overtime_note').innerText = '';

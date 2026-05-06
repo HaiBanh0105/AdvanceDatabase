@@ -40,10 +40,18 @@
                         <span class="text-slate-500" id="inv_base_price_label">Tiền phòng dự kiến</span>
                         <span class="font-bold text-slate-800" id="inv_base_price"></span>
                     </div>
-                    <div class="flex justify-between items-center border-b border-dashed border-slate-200 pb-2">
-                        <span class="text-slate-500">Phụ thu phát sinh <span id="inv_overtime_note"
-                                class="text-[10px] text-slate-400 font-normal"></span></span>
-                        <span class="font-bold text-rose-600" id="inv_overtime_fee"></span>
+                    <div id="inv_overtime_box"
+                        class="hidden flex-col border-b border-dashed border-slate-200 pb-3 pt-1 gap-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-500 font-bold text-rose-600">Phụ phí phát sinh</span>
+                            <span class="font-bold text-rose-600" id="inv_overtime_fee"></span>
+                        </div>
+                        <div class="text-[11px] text-slate-500 bg-rose-50 p-3 rounded-xl border border-rose-100">
+                            <p class="font-bold text-slate-700 mb-1"><i
+                                    class="fa-solid fa-circle-info text-rose-500 mr-1"></i> Chi tiết: Khách trả phòng lố
+                                giờ <span id="inv_overtime_note" class="text-rose-600"></span></p>
+                            <p class="italic text-[10px]">* Phụ phí được hệ thống tự động cộng dồn vào tổng hóa đơn.</p>
+                        </div>
                     </div>
                     <div class="flex justify-between items-center border-b border-dashed border-slate-200 pb-2">
                         <span class="text-slate-500">Trạng thái thanh toán</span>
@@ -73,5 +81,38 @@
                 </div>
             </div>
         </div>
+
+        <div class="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 shrink-0">
+            <button type="button" onclick="alert('Chức năng đang được phát triển!');"
+                class="bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-indigo-700 transition shadow-md shadow-indigo-200 flex items-center gap-2">
+                <i class="fa-solid fa-print"></i> In Hóa Đơn
+            </button>
+        </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const invOvertimeFee = document.getElementById('inv_overtime_fee');
+        const invOvertimeBox = document.getElementById('inv_overtime_box');
+
+        if (invOvertimeFee && invOvertimeBox) {
+            const observer = new MutationObserver(() => {
+                const feeText = invOvertimeFee.innerText.trim();
+                // Ẩn cảnh báo đỏ nếu giá trị là trống, 0, hoặc 0đ
+                if (feeText === '' || feeText === '0' || feeText === '0đ') {
+                    invOvertimeBox.classList.add('hidden');
+                    invOvertimeBox.classList.remove('flex');
+                } else {
+                    invOvertimeBox.classList.remove('hidden');
+                    invOvertimeBox.classList.add('flex');
+                }
+            });
+            observer.observe(invOvertimeFee, {
+                childList: true,
+                characterData: true,
+                subtree: true
+            });
+        }
+    });
+</script>

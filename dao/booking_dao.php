@@ -3,11 +3,32 @@ require_once('DAO.php');
 
 const VALID_BOOKING_STATUSES = ['pending', 'confirmed', 'checked_in', 'completed', 'cancelled'];
 
+function get_pricing_config()
+{
+    $config_file = __DIR__ . '/../config/pricing.json';
+    if (!file_exists($config_file)) {
+        $default = [
+            'weekend_multiplier' => 1.2,
+            'holiday_multiplier' => 1.5,
+            'holidays' => ['01-01', '30-04', '01-05', '02-09', '31-12']
+        ];
+        file_put_contents($config_file, json_encode($default, JSON_PRETTY_PRINT));
+        return $default;
+    }
+    return json_decode(file_get_contents($config_file), true);
+}
+
+function save_pricing_config($data)
+{
+    $config_file = __DIR__ . '/../config/pricing.json';
+    file_put_contents($config_file, json_encode($data, JSON_PRETTY_PRINT));
+}
+
 function booking_find_available_room($type_id, $check_in, $check_out)
 {
     $sql = "
         SELECT TOP 1 r.room_id, rt.price_per_day, rt.price_per_hour
-        FROM Room r WITH (UPDLOCK, ROWLOCK)
+        FROM Room r WITH (UPDLOCK, ROWLOCK, READPAST)
         JOIN Room_types rt ON r.type_id = rt.type_id
         WHERE r.type_id = ? AND r.status = 'available'
         AND r.room_id NOT IN (
@@ -79,6 +100,14 @@ function booking_create_admin_walkin($employee_id, $room_id, $check_in, $check_o
     try {
         $conn->beginTransaction();
 
+        // Kiểm tra và Khóa phòng bi quan (Pessimistic Lock) ngay trong Transaction
+        $sql_lock = "SELECT 1 FROM Room WITH (UPDLOCK, ROWLOCK) WHERE room_id = ?";
+        $conn->prepare($sql_lock)->execute([$room_id]);
+
+        if (!booking_is_room_available($room_id, $check_in, $check_out)) {
+            throw new Exception("ROOM_OCCUPIED");
+        }
+
         $rep_name = $guests[$rep_index]['name'] ?? 'Khách vãng lai';
         $rep_cccd = trim($guests[$rep_index]['cccd'] ?? '');
 
@@ -128,6 +157,9 @@ function booking_create_admin_walkin($employee_id, $room_id, $check_in, $check_o
             $conn->rollBack();
         }
         error_log('booking_create_admin_walkin error: ' . $e->getMessage());
+        if ($e->getMessage() === 'ROOM_OCCUPIED') {
+            return 'ROOM_OCCUPIED';
+        }
         return false;
     }
 }
@@ -141,16 +173,6 @@ function booking_update_status($booking_id, $status)
     // Chuyển checked_in thành checked-in để tương thích Schema
     $db_status = str_replace('_', '-', $status);
     db_execute("UPDATE Booking SET booking_status = ? WHERE booking_id = ?", $db_status, $booking_id);
-
-    // Cập nhật trạng thái phòng khi Lễ tân duyệt đơn Check-in hoặc Hủy
-    $room_id = db_query_value("SELECT room_id FROM Booking_detail WHERE booking_id = ?", $booking_id);
-    if ($room_id) {
-        if ($db_status === 'checked-in') {
-            db_execute("UPDATE Room SET status = 'occupied' WHERE room_id = ?", $room_id);
-        } elseif ($db_status === 'cancelled') {
-            db_execute("UPDATE Room SET status = 'available' WHERE room_id = ?", $room_id);
-        }
-    }
 
     return true;
 }
@@ -228,7 +250,7 @@ function booking_get_guest_by_cccd($cccd)
 
 function booking_get_details_for_checkout($booking_id)
 {
-    $sql = "SELECT b.booking_id, b.check_in_planned as check_in, b.check_out_planned as check_out, b.booking_status as status, b.total_price, bd.price_at_booking, r.room_number, rt.price_per_hour, rt.price_per_day
+    $sql = "SELECT b.booking_id, b.check_in_planned as check_in, b.check_out_planned as check_out, b.booking_status as status, b.total_price, bd.price_at_booking, bd.actual_check_out, r.room_number, rt.price_per_hour, rt.price_per_day
             FROM Booking b
             JOIN Booking_detail bd ON b.booking_id = bd.booking_id
             JOIN Room r ON bd.room_id = r.room_id
@@ -269,26 +291,16 @@ function booking_process_checkout($booking_id, $actual_checkout)
         $overtime_hours = ceil(($now - $exp_out) / 3600);
 
         $overtime_fee = $overtime_hours * $booking['price_per_hour'];
+        if ($overtime_fee > $booking['price_per_day']) {
+            $overtime_fee = $booking['price_per_day'];
+        }
     }
 
     $final_total = $booking['total_price'] + $overtime_fee;
 
-    db_execute(
-        "UPDATE Booking SET booking_status = 'completed', total_price = ?, payment_status = 'paid' WHERE booking_id = ?",
-        $final_total,
-        $booking_id
-    );
-    db_execute(
-        "UPDATE Booking_detail SET actual_check_out = ? WHERE booking_id = ?",
-        $actual_checkout,
-        $booking_id
-    );
-
-    // Cập nhật trạng thái phòng sang 'cleaning' sau khi khách trả phòng
-    $room_id = db_query_value("SELECT room_id FROM Booking_detail WHERE booking_id = ?", $booking_id);
-    if ($room_id) {
-        db_execute("UPDATE Room SET status = 'cleaning' WHERE room_id = ?", $room_id);
-    }
+    // Gọi Stored Procedure xử lý giao dịch Checkout (Đã bao gồm Trigger đổi trạng thái phòng tự động)
+    $sql = "EXEC sp_ProcessCheckout @booking_id = ?, @actual_checkout = ?, @final_total = ?";
+    db_execute($sql, $booking_id, $actual_checkout, $final_total);
 
     return $final_total;
 }
