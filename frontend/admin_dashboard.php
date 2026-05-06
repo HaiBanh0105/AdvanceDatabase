@@ -77,7 +77,7 @@ $rooms = db_query("SELECT room_number, status FROM Room ORDER BY room_number ASC
         <div id="room-types" class="bg-white rounded-2xl border border-slate-200 shadow-sm mb-10 overflow-hidden">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                 <h2 class="font-bold text-slate-800">Bảng giá & Loại phòng</h2>
-                <button class="text-indigo-600 text-sm font-bold hover:underline">Chỉnh sửa tất cả</button>
+                <a class="text-indigo-600 text-sm font-bold hover:underline" href="admin_rooms.php">Chỉnh sửa tất cả</a>
             </div>
             <table class="w-full text-left">
                 <thead
@@ -92,28 +92,28 @@ $rooms = db_query("SELECT room_number, status FROM Room ORDER BY room_number ASC
                 </thead>
                 <tbody class="divide-y divide-slate-50">
                     <?php if (empty($room_types)): ?>
-                    <tr>
-                        <td colspan="5" class="px-6 py-4 text-center text-slate-400">Chưa có hạng phòng nào</td>
-                    </tr>
+                        <tr>
+                            <td colspan="5" class="px-6 py-4 text-center text-slate-400">Chưa có hạng phòng nào</td>
+                        </tr>
                     <?php else: ?>
-                    <?php foreach ($room_types as $rt): ?>
-                    <tr class="hover:bg-slate-50/50 transition">
-                        <td class="px-6 py-4 font-bold text-slate-700"><?= htmlspecialchars($rt['name']) ?></td>
-                        <td class="px-6 py-4 text-slate-500"><?= $rt['capacity'] ?> người</td>
-                        <td class="px-6 py-4 font-bold text-indigo-600 uppercase">
-                            <?= number_format($rt['price_per_day'], 0, ',', '.') ?>đ</td>
-                        <td class="px-6 py-4">
-                            <span
-                                class="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-[10px] font-bold">ĐANG
-                                BÁN</span>
-                        </td>
-                        <td class="px-6 py-4 text-right">
-                            <a href="admin_rooms.php?tab=types"
-                                class="text-slate-400 hover:text-indigo-600 transition p-2"><i
-                                    class="fa-solid fa-pen"></i></a>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
+                        <?php foreach ($room_types as $rt): ?>
+                            <tr class="hover:bg-slate-50/50 transition">
+                                <td class="px-6 py-4 font-bold text-slate-700"><?= htmlspecialchars($rt['name']) ?></td>
+                                <td class="px-6 py-4 text-slate-500"><?= $rt['capacity'] ?> người</td>
+                                <td class="px-6 py-4 font-bold text-indigo-600 uppercase">
+                                    <?= number_format($rt['price_per_day'], 0, ',', '.') ?>đ</td>
+                                <td class="px-6 py-4">
+                                    <span
+                                        class="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-[10px] font-bold">ĐANG
+                                        BÁN</span>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <a href="admin_rooms.php?tab=types"
+                                        class="text-slate-400 hover:text-indigo-600 transition p-2"><i
+                                            class="fa-solid fa-pen"></i></a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
                     <?php endif; ?>
                 </tbody>
             </table>
@@ -125,7 +125,7 @@ $rooms = db_query("SELECT room_number, status FROM Room ORDER BY room_number ASC
             </div>
             <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 p-6">
                 <?php foreach ($rooms as $r): ?>
-                <?php
+                    <?php
                     $status_class = '';
                     $status_text = '';
                     if ($r['status'] == 'available') {
@@ -142,24 +142,24 @@ $rooms = db_query("SELECT room_number, status FROM Room ORDER BY room_number ASC
                         $status_text = 'Bảo trì';
                     }
                     ?>
-                <div
-                    class="border border-slate-200 rounded-xl p-4 text-center hover:border-indigo-500 transition cursor-pointer group <?= $r['status'] != 'available' ? 'bg-slate-50' : '' ?>">
-                    <p class="text-xs font-bold text-slate-400 mb-1">PHÒNG</p>
-                    <h4
-                        class="text-xl font-black <?= $r['status'] == 'available' ? 'text-slate-800 group-hover:text-indigo-600' : 'text-slate-400' ?>">
-                        <?= htmlspecialchars($r['room_number']) ?></h4>
                     <div
-                        class="mt-2 inline-block <?= $status_class ?> px-2 py-0.5 rounded text-[9px] font-bold uppercase">
-                        <?= $status_text ?></div>
-                </div>
+                        class="border border-slate-200 rounded-xl p-4 text-center hover:border-indigo-500 transition cursor-pointer group <?= $r['status'] != 'available' ? 'bg-slate-50' : '' ?>">
+                        <p class="text-xs font-bold text-slate-400 mb-1">PHÒNG</p>
+                        <h4
+                            class="text-xl font-black <?= $r['status'] == 'available' ? 'text-slate-800 group-hover:text-indigo-600' : 'text-slate-400' ?>">
+                            <?= htmlspecialchars($r['room_number']) ?></h4>
+                        <div
+                            class="mt-2 inline-block <?= $status_class ?> px-2 py-0.5 rounded text-[9px] font-bold uppercase">
+                            <?= $status_text ?></div>
+                    </div>
                 <?php endforeach; ?>
             </div>
         </div>
     </main>
 
     <script>
-    // JS xử lý các tương tác nhanh
-    console.log("Admin Dashboard Loaded");
+        // JS xử lý các tương tác nhanh
+        console.log("Admin Dashboard Loaded");
     </script>
 </body>
 
