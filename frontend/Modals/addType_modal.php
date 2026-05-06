@@ -1,14 +1,13 @@
 <div id="addTypeModal"
     class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div
-        class="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in duration-300">
+    <div class="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in duration-300">
         <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
             <h3 class="font-bold text-lg text-slate-800 uppercase tracking-tight">Định nghĩa Hạng phòng</h3>
             <button onclick="toggleModal('addTypeModal')" class="text-slate-400 hover:text-slate-600"><i
                     class="fa-solid fa-xmark"></i></button>
         </div>
-        <form id="addTypeForm" action="../actions/process_add_room_type.php" method="POST"
-            enctype="multipart/form-data" class="p-8 space-y-4">
+        <form id="addTypeForm" action="../actions/process_add_room_type.php" method="POST" enctype="multipart/form-data"
+            class="p-8 space-y-4">
             <input type="hidden" name="action" value="add">
             <div class="grid grid-cols-2 gap-4">
                 <div class="col-span-2">
@@ -41,6 +40,23 @@
                     <textarea name="description" rows="3"
                         class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                         placeholder="Ví dụ: Nội thất gỗ, view biển, có bồn tắm..."></textarea>
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Tiện
+                        ích</label>
+                    <div class="flex flex-wrap gap-3 mt-1">
+                        <?php
+                        $all_amenities = amenity_get_all();
+                        foreach ($all_amenities as $amn):
+                        ?>
+                            <label
+                                class="flex items-center gap-2 cursor-pointer hover:bg-slate-100 px-3 py-2 rounded-xl transition border border-slate-200">
+                                <input type="checkbox" name="amenities[]" value="<?= $amn ?>"
+                                    class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer">
+                                <span class="text-sm text-slate-700 font-medium"><?= $amn ?></span>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
                 </div>
                 <div class="col-span-2">
                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Tải

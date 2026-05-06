@@ -16,6 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $price_per_day = (float)($_POST['price_per_day'] ?? 0);
         $capacity = (int)($_POST['capacity'] ?? 0);
         $description = trim($_POST['description'] ?? '');
+        $amenities = $_POST['amenities'] ?? [];
 
         if (!empty($name) && $price_per_day >= 0 && $capacity > 0) {
             if (room_type_check_name_exists($name)) {
@@ -25,10 +26,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             $type_id = room_type_insert($name, $price_per_hour, $price_per_day, $capacity, $description);
 
+            $base64 = null;
+            $mime = null;
             if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
                 $base64 = base64_encode(file_get_contents($_FILES['image']['tmp_name']));
-                room_image_insert($type_id, $base64, $_FILES['image']['type']);
+                $mime = $_FILES['image']['type'];
             }
+            room_details_upsert($type_id, $amenities, $base64, $mime);
         }
         header("Location: ../frontend/admin_rooms.php?msg=added&tab=types");
     } elseif ($action === 'edit') {
@@ -38,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $price_per_day = (float)($_POST['price_per_day'] ?? 0);
         $capacity = (int)($_POST['capacity'] ?? 0);
         $description = trim($_POST['description'] ?? '');
+        $amenities = $_POST['amenities'] ?? [];
 
         if ($type_id > 0 && !empty($name)) {
             if (room_type_check_name_exists($name, $type_id)) {
@@ -47,10 +52,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             room_type_update($type_id, $name, $price_per_hour, $price_per_day, $capacity, $description);
 
+            $base64 = null;
+            $mime = null;
             if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
                 $base64 = base64_encode(file_get_contents($_FILES['image']['tmp_name']));
-                room_image_update($type_id, $base64, $_FILES['image']['type']);
+                $mime = $_FILES['image']['type'];
             }
+            room_details_upsert($type_id, $amenities, $base64, $mime);
         }
         header("Location: ../frontend/admin_rooms.php?msg=updated&tab=types");
     } elseif ($action === 'delete') {
@@ -62,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
 
         room_type_delete($type_id);
-        room_image_delete($type_id);
+        room_details_delete($type_id);
 
         header("Location: ../frontend/admin_rooms.php?msg=deleted&tab=types");
     }

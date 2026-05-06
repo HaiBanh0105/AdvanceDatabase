@@ -8,15 +8,52 @@ require_once '../dao/booking_dao.php';
 $search_in = $_GET['check_in'] ?? '';
 $search_out = $_GET['check_out'] ?? '';
 $search_guests = (int)($_GET['guests'] ?? 0);
-$is_searched = ($search_in && $search_out && $search_guests > 0);
+$search_amenities = $_GET['amenities'] ?? []; // Lấy mảng tiện ích khách đã chọn
+$is_searched = ($search_in || $search_out || $search_guests > 0 || !empty($search_amenities));
+$can_book = ($search_in && $search_out); // Chỉ cho phép đặt khi đã chọn đủ ngày
+
+// TRUY VẤN MONGODB ĐỂ LỌC TIỆN ÍCH TRƯỚC
+$mongo_db = mongo_get_db();
+$valid_type_ids = [];
+$filter_by_mongo = false;
+
+if (!empty($search_amenities)) {
+    $filter_by_mongo = true;
+    // MongoDB Query: Tìm các hạng phòng có chứa TẤT CẢ các tiện ích được chọn
+    $mongo_filter = ['amenities' => ['$all' => $search_amenities]];
+    $cursor = $mongo_db->room_details->find($mongo_filter);
+    foreach ($cursor as $doc) {
+        if (isset($doc['type_id'])) {
+            $valid_type_ids[] = (int)$doc['type_id'];
+        }
+    }
+}
 
 if ($is_searched) {
-    $in_time = $search_in . ' 14:00:00';
-    $out_time = $search_out . ' 12:00:00';
-    // Chỉ lấy Hạng phòng Đủ sức chứa VÀ Còn phòng trống trong khoảng thời gian đó
-    $sql = "SELECT rt.* FROM Room_types rt
-            WHERE rt.capacity >= ?
-            AND EXISTS (
+    $sql = "SELECT rt.* FROM Room_types rt WHERE 1=1 ";
+    $params = [];
+
+    if ($search_guests > 0) {
+        $sql .= " AND rt.capacity >= ? ";
+        $params[] = $search_guests;
+    }
+
+    // Khớp ID từ MongoDB vào câu lệnh SQL
+    if ($filter_by_mongo) {
+        if (empty($valid_type_ids)) {
+            $sql .= " AND 1=0 "; // Ép trả về rỗng nếu MongoDB không tìm thấy kết quả nào
+        } else {
+            $placeholders = implode(',', array_fill(0, count($valid_type_ids), '?'));
+            $sql .= " AND rt.type_id IN ($placeholders) ";
+            $params = array_merge($params, $valid_type_ids);
+        }
+    }
+
+    // Nếu khách có chọn Ngày, kiểm tra phòng rỗng trong khoảng thời gian đó
+    if ($can_book) {
+        $in_time = $search_in . ' 14:00:00';
+        $out_time = $search_out . ' 12:00:00';
+        $sql .= " AND EXISTS (
                 SELECT 1 FROM Room r
                 WHERE r.type_id = rt.type_id AND r.status = 'available'
                 AND r.room_id NOT IN (
@@ -25,8 +62,18 @@ if ($is_searched) {
                     WHERE b.booking_status NOT IN ('cancelled', 'completed')
                     AND (b.check_in_planned < ? AND b.check_out_planned > ?)
                 )
-            ) ORDER BY rt.price_per_day ASC";
-    $room_types = db_query($sql, $search_guests, $out_time, $in_time);
+            )";
+        $params[] = $out_time;
+        $params[] = $in_time;
+    }
+
+    $sql .= " ORDER BY rt.price_per_day ASC";
+
+    if (!empty($params)) {
+        $room_types = db_query($sql, ...$params);
+    } else {
+        $room_types = db_query($sql);
+    }
 } else {
     // Mặc định lấy tất cả hạng phòng
     $room_types = room_type_get_all('price ASC');
@@ -39,14 +86,15 @@ if ($user_id) {
     $user_profile = db_query_one("SELECT c.*, a.status FROM Customer c JOIN Account a ON c.customer_id = a.customer_id WHERE a.account_id = ?", $user_id);
 }
 
-// Lấy ảnh MongoDB
+// Lấy dữ liệu Phòng (Ảnh, Tiện ích) từ MongoDB
 $mongo_db = mongo_get_db();
-$images_cursor = $mongo_db->room_images->find([]);
+$details_cursor = $mongo_db->room_details->find([]);
 $mongo_images = [];
-foreach ($images_cursor as $img) {
-    $mongo_images[$img['type_id']] = [
-        'base64' => $img['image_base64'],
-        'mime' => $img['mime_type'] ?? 'image/jpeg'
+foreach ($details_cursor as $doc) {
+    $mongo_images[$doc['type_id']] = [
+        'base64' => $doc['image_base64'] ?? '',
+        'mime' => $doc['mime_type'] ?? 'image/jpeg',
+        'amenities' => isset($doc['amenities']) ? iterator_to_array($doc['amenities']) : []
     ];
 }
 
@@ -64,7 +112,7 @@ $pricing_config = get_pricing_config();
 $dynamic_multiplier_sum = 0;
 $duration_days = 0;
 
-if ($is_searched) {
+if ($can_book) {
     $current_date = strtotime($search_in);
     $end_date = strtotime($search_out);
     while ($current_date < $end_date) {
@@ -81,6 +129,9 @@ if ($is_searched) {
         $current_date = strtotime('+1 day', $current_date);
     }
 }
+
+// Lấy danh sách Tiện ích từ MongoDB để hiển thị checkbox
+$all_amenities = amenity_get_all();
 ?>
 <!DOCTYPE html>
 <html lang="vi" class="scroll-smooth">
@@ -112,35 +163,47 @@ if ($is_searched) {
     <!-- Bộ lọc Tìm kiếm Nhanh (Search Bar) -->
     <div class="max-w-4xl mx-auto px-4 relative z-20 -mt-12">
         <form id="searchBar" action="#rooms" method="GET"
-            class="bg-white p-3 md:p-4 rounded-2xl shadow-xl flex flex-col md:flex-row items-center gap-3 border border-slate-100">
-            <div class="flex-1 w-full relative">
+            class="bg-white p-4 rounded-2xl shadow-xl grid grid-cols-1 md:grid-cols-4 gap-4 border border-slate-100">
+            <div class="w-full relative">
                 <i class="fa-regular fa-calendar-check absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500"></i>
                 <input type="date" name="check_in" value="<?= htmlspecialchars($search_in) ?>"
-                    min="<?= date('Y-m-d') ?>" required
+                    min="<?= date('Y-m-d') ?>"
                     class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700"
                     title="Ngày nhận phòng">
             </div>
-            <div class="flex-1 w-full relative">
+            <div class="w-full relative">
                 <i class="fa-regular fa-calendar-xmark absolute left-4 top-1/2 -translate-y-1/2 text-rose-500"></i>
                 <input type="date" name="check_out" value="<?= htmlspecialchars($search_out) ?>"
-                    min="<?= date('Y-m-d', strtotime('+1 day')) ?>" required
+                    min="<?= date('Y-m-d', strtotime('+1 day')) ?>"
                     class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700"
                     title="Ngày trả phòng">
             </div>
-            <div class="flex-1 w-full relative">
+            <div class="w-full relative">
                 <i class="fa-solid fa-users absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <select name="guests" required
+                <input type="number" name="guests" min="1" placeholder="Số người ở (Tùy chọn)"
+                    value="<?= $search_guests ? htmlspecialchars($search_guests) : '' ?>"
                     class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700">
-                    <option value="" disabled <?= !$search_guests ? 'selected' : '' ?>>Số người ở...</option>
-                    <?php for ($i = 1; $i <= 10; $i++): ?>
-                    <option value="<?= $i ?>" <?= $search_guests == $i ? 'selected' : '' ?>><?= $i ?> Người lớn</option>
-                    <?php endfor; ?>
-                </select>
             </div>
             <button type="submit"
-                class="w-full md:w-auto bg-indigo-600 text-white px-8 py-3.5 rounded-xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition active:scale-95 shrink-0 whitespace-nowrap">
-                Tìm phòng trống
+                class="w-full bg-indigo-600 text-white px-8 py-3.5 rounded-xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition active:scale-95 whitespace-nowrap">
+                Tìm kiếm phòng
             </button>
+
+            <!-- Dòng Chọn Dịch vụ/Tiện ích (MongoDB filter) -->
+            <div class="md:col-span-4 border-t border-slate-100 pt-3 flex flex-wrap gap-4 items-center">
+                <span class="text-sm font-bold text-slate-600"><i class="fa-solid fa-sparkles text-amber-500 mr-1"></i>
+                    Tiện ích nổi bật:</span>
+                <?php
+                foreach ($all_amenities as $amn):
+                    $checked = in_array($amn, $search_amenities) ? 'checked' : '';
+                ?>
+                <label class="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-2 py-1 rounded-lg transition">
+                    <input type="checkbox" name="amenities[]" value="<?= $amn ?>" <?= $checked ?>
+                        class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer">
+                    <span class="text-sm text-slate-700 font-medium"><?= $amn ?></span>
+                </label>
+                <?php endforeach; ?>
+            </div>
         </form>
     </div>
 
@@ -187,16 +250,26 @@ if ($is_searched) {
                     <p class="text-slate-500 text-sm line-clamp-3 mb-6 flex-1">
                         <?php echo htmlspecialchars($rt['description']); ?></p>
                     <div
-                        class="flex items-center gap-4 text-xs font-bold text-slate-400 uppercase tracking-widest mb-8">
+                        class="flex items-center gap-4 text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">
                         <span><i class="fa-solid fa-user-group text-indigo-400 mr-1.5"></i>Tối đa
                             <?php echo $rt['capacity']; ?> người</span>
                     </div>
 
-                    <?php if (!$is_searched): ?>
+                    <?php if (isset($mongo_images[$rt['type_id']]) && !empty($mongo_images[$rt['type_id']]['amenities'])): ?>
+                    <div class="flex flex-wrap gap-2 mb-6">
+                        <?php foreach ($mongo_images[$rt['type_id']]['amenities'] as $amn): ?>
+                        <span
+                            class="px-2.5 py-1 bg-slate-50 border border-slate-200 text-slate-600 rounded-lg text-[10px] font-bold"><i
+                                class="fa-solid fa-check text-emerald-500 mr-1"></i> <?= $amn ?></span>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
+
+                    <?php if (!$can_book): ?>
                     <a href="#searchBar"
                         onclick="document.getElementById('searchBar').classList.add('ring-4', 'ring-indigo-200', 'scale-[1.02]'); setTimeout(()=>document.getElementById('searchBar').classList.remove('ring-4', 'ring-indigo-200', 'scale-[1.02]'), 500);"
                         class="mt-auto text-center w-full bg-slate-800 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-slate-900 transition active:scale-95">Chọn
-                        ngày để xem giá</a>
+                        ngày để Đặt phòng</a>
                     <?php else: ?>
                     <?php
                                 $total_dynamic_price = $rt['price_per_day'] * $dynamic_multiplier_sum;

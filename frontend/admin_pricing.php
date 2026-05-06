@@ -60,7 +60,7 @@ $pricing_config = get_pricing_config();
                                             class="w-full pl-11 pr-4 py-3 bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all font-semibold text-slate-700"
                                             required>
                                         <div
-                                            class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400 text-sm font-medium">
+                                            class="absolute inset-y-0 right-5 pr-4 flex items-center pointer-events-none text-slate-400 text-sm font-medium">
                                             x Giá gốc
                                         </div>
                                     </div>
@@ -83,7 +83,7 @@ $pricing_config = get_pricing_config();
                                             class="w-full pl-11 pr-4 py-3 bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all font-semibold text-slate-700"
                                             required>
                                         <div
-                                            class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400 text-sm font-medium">
+                                            class="absolute inset-y-0 right-5 pr-4 flex items-center pointer-events-none text-slate-400 text-sm font-medium">
                                             x Giá gốc
                                         </div>
                                     </div>

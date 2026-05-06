@@ -65,36 +65,43 @@ function room_type_get_all($order_by = 'type_id DESC')
 }
 
 // --- QUẢN LÝ ẢNH (MONGODB) ---
-function room_image_insert($type_id, $base64, $mime_type)
+function room_details_upsert($type_id, $amenities, $base64 = null, $mime_type = null)
 {
     $db = mongo_get_db();
-    return $db->room_images->insertOne(['type_id' => (int)$type_id, 'image_base64' => $base64, 'mime_type' => $mime_type]);
+    $update_data = [
+        'type_id' => (int)$type_id,
+        'amenities' => is_array($amenities) ? $amenities : []
+    ];
+    if ($base64 !== null) {
+        $update_data['image_base64'] = $base64;
+        $update_data['mime_type'] = $mime_type;
+    }
+    return $db->room_details->updateOne(
+        ['type_id' => (int)$type_id], 
+        ['$set' => $update_data], 
+        ['upsert' => true]
+    );
 }
 
-function room_image_update($type_id, $base64, $mime_type)
+function room_details_delete($type_id)
 {
     $db = mongo_get_db();
-    return $db->room_images->updateOne(['type_id' => (int)$type_id], ['$set' => ['image_base64' => $base64, 'mime_type' => $mime_type]], ['upsert' => true]);
+    return $db->room_details->deleteOne(['type_id' => (int)$type_id]);
 }
 
-function room_image_delete($type_id)
+function room_details_get_all()
 {
     $db = mongo_get_db();
-    return $db->room_images->deleteOne(['type_id' => (int)$type_id]);
-}
-
-function room_image_get_all()
-{
-    $db = mongo_get_db();
-    $images_cursor = $db->room_images->find([]);
-    $mongo_images = [];
-    foreach ($images_cursor as $img) {
-        $mongo_images[$img['type_id']] = [
-            'base64' => $img['image_base64'],
-            'mime' => $img['mime_type'] ?? 'image/jpeg'
+    $cursor = $db->room_details->find([]);
+    $mongo_details = [];
+    foreach ($cursor as $doc) {
+        $mongo_details[$doc['type_id']] = [
+            'amenities' => isset($doc['amenities']) ? iterator_to_array($doc['amenities']) : [],
+            'base64' => $doc['image_base64'] ?? '',
+            'mime' => $doc['mime_type'] ?? 'image/jpeg'
         ];
     }
-    return $mongo_images;
+    return $mongo_details;
 }
 
 function room_check_number_exists($room_number, $exclude_id = 0)
@@ -111,4 +118,46 @@ function room_type_check_name_exists($name, $exclude_id = 0)
         return db_query_value("SELECT COUNT(*) FROM Room_types WHERE name = ? AND type_id != ?", $name, $exclude_id) > 0;
     }
     return db_query_value("SELECT COUNT(*) FROM Room_types WHERE name = ?", $name) > 0;
+}
+
+// --- QUẢN LÝ TIỆN ÍCH (MONGODB) ---
+function amenity_get_all()
+{
+    $db = mongo_get_db();
+    $count = $db->amenities->countDocuments([]);
+    if ($count === 0) {
+        $defaults = ['Wifi', 'Pool', 'Mini Bar', 'Ocean View', 'Balcony', 'Bathtub'];
+        foreach ($defaults as $amn) {
+            $db->amenities->insertOne(['name' => $amn]);
+        }
+    }
+    $cursor = $db->amenities->find([], ['sort' => ['name' => 1]]);
+    $amenities = [];
+    foreach ($cursor as $doc) {
+        $amenities[] = $doc['name'];
+    }
+    return $amenities;
+}
+
+function amenity_add($name)
+{
+    $db = mongo_get_db();
+    $name = trim($name);
+    if (!empty($name)) {
+        $existing = $db->amenities->findOne(['name' => new MongoDB\BSON\Regex('^' . preg_quote($name) . '$', 'i')]);
+        if (!$existing) {
+            $db->amenities->insertOne(['name' => $name]);
+            return true;
+        }
+    }
+    return false;
+}
+
+function amenity_delete($name)
+{
+    $db = mongo_get_db();
+    $db->amenities->deleteOne(['name' => $name]);
+    // Đồng thời gỡ bỏ tiện ích này khỏi tất cả các Hạng phòng đang chứa nó
+    $db->room_details->updateMany([], ['$pull' => ['amenities' => $name]]);
+    return true;
 }

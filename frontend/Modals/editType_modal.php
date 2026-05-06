@@ -42,6 +42,23 @@
                         class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"></textarea>
                 </div>
                 <div class="col-span-2">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Tiện
+                        ích</label>
+                    <div class="flex flex-wrap gap-3 mt-1" id="edit_amenities_container">
+                        <?php
+                        $all_amenities = amenity_get_all();
+                        foreach ($all_amenities as $amn):
+                        ?>
+                            <label
+                                class="flex items-center gap-2 cursor-pointer hover:bg-slate-100 px-3 py-2 rounded-xl transition border border-slate-200">
+                                <input type="checkbox" name="amenities[]" value="<?= $amn ?>"
+                                    class="edit-amn-checkbox w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer">
+                                <span class="text-sm text-slate-700 font-medium"><?= $amn ?></span>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <div class="col-span-2">
                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Hình
                         ảnh mới (Để trống nếu không đổi)</label>
                     <input type="file" name="image" accept="image/*"
@@ -58,3 +75,22 @@
         </form>
     </div>
 </div>
+
+<script>
+    function openEditTypeModalWithAmenities(id, name, priceHr, priceDay, capacity, desc, amenitiesStr = '') {
+        // Gọi hàm cũ để điền các input mặc định nếu có
+        if (typeof openEditTypeModal === 'function') {
+            openEditTypeModal(id, name, priceHr, priceDay, capacity, desc);
+        }
+
+        // Xử lý tick các hộp checkbox tiện ích
+        let amenitiesArr = amenitiesStr.split(',');
+        document.querySelectorAll('.edit-amn-checkbox').forEach(cb => {
+            cb.checked = amenitiesArr.includes(cb.value);
+        });
+
+        // Đảm bảo modal hiện lên
+        document.getElementById('editTypeModal').classList.remove('hidden');
+        document.getElementById('editTypeModal').classList.add('flex');
+    }
+</script>

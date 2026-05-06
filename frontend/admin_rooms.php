@@ -6,8 +6,8 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
 }
 require_once '../dao/room_dao.php';
 
-// Lấy tất cả ảnh từ MongoDB cho các hạng phòng
-$mongo_images = room_image_get_all();
+// Lấy tất cả ảnh và tiện ích từ MongoDB (collection room_details)
+$mongo_details = room_details_get_all();
 
 // Lấy danh sách Hạng phòng (Room Types)
 $room_types = room_type_get_all();
@@ -170,10 +170,15 @@ $rooms = room_get_all_details();
                         </tr>
                         <?php else: ?>
                         <?php foreach ($room_types as $rt): ?>
+                        <?php 
+                            $has_mongo = isset($mongo_details[$rt['type_id']]);
+                            $amenities = $has_mongo ? $mongo_details[$rt['type_id']]['amenities'] : [];
+                            $has_image = $has_mongo && !empty($mongo_details[$rt['type_id']]['base64']);
+                        ?>
                         <tr class="hover:bg-slate-50/50 transition">
                             <td class="px-6 py-4">
-                                <?php if (isset($mongo_images[$rt['type_id']])): ?>
-                                <img src="data:<?php echo $mongo_images[$rt['type_id']]['mime']; ?>;base64,<?php echo $mongo_images[$rt['type_id']]['base64']; ?>"
+                                <?php if ($has_image): ?>
+                                <img src="data:<?php echo $mongo_details[$rt['type_id']]['mime']; ?>;base64,<?php echo $mongo_details[$rt['type_id']]['base64']; ?>"
                                     class="w-12 h-12 rounded-lg object-cover shadow-sm">
                                 <?php else: ?>
                                 <div
@@ -191,14 +196,22 @@ $rooms = room_get_all_details();
                             <td class="px-6 py-4 text-slate-600">
                                 <?php echo str_pad($rt['capacity'], 2, '0', STR_PAD_LEFT); ?> Người</td>
                             <td class="px-6 py-4">
+                                <?php if (!empty($amenities)): ?>
+                                    <div class="flex flex-wrap gap-1 mb-1">
+                                        <?php foreach($amenities as $amn): ?>
+                                            <span class="text-[9px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded font-bold border border-indigo-100"><?= $amn ?></span>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
                                 <div class="text-xs text-slate-500 max-w-xs truncate"
                                     title="<?php echo htmlspecialchars($rt['description'] ?? ''); ?>">
                                     <?php echo htmlspecialchars($rt['description'] ?? 'Chưa có mô tả'); ?>
                                 </div>
                             </td>
                             <td class="px-6 py-4 text-right space-x-2">
+                                <?php $amenities_str = htmlspecialchars(implode(',', $amenities), ENT_QUOTES, 'UTF-8'); ?>
                                 <button
-                                    onclick="openEditTypeModal(<?php echo $rt['type_id']; ?>, '<?php echo htmlspecialchars(addslashes($rt['name'])); ?>', <?php echo $rt['price_per_hour']; ?>, <?php echo $rt['price_per_day']; ?>, <?php echo $rt['capacity']; ?>, '<?php echo htmlspecialchars(addslashes($rt['description'] ?? '')); ?>')"
+                                    onclick="openEditTypeModalWithAmenities(<?php echo $rt['type_id']; ?>, '<?php echo htmlspecialchars(addslashes($rt['name'])); ?>', <?php echo $rt['price_per_hour']; ?>, <?php echo $rt['price_per_day']; ?>, <?php echo $rt['capacity']; ?>, '<?php echo htmlspecialchars(addslashes($rt['description'] ?? '')); ?>', '<?php echo $amenities_str; ?>')"
                                     class="text-amber-500 hover:text-amber-700 bg-amber-50 p-2 rounded-lg transition"
                                     title="Sửa"><i class="fa-solid fa-pen-to-square"></i></button>
                                 <form action="../actions/process_add_room_type.php" method="POST" class="inline"
