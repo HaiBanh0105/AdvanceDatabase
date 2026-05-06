@@ -1,13 +1,14 @@
 <div id="editTypeModal"
     class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in duration-300">
-        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+    <div
+        class="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in duration-300 max-h-[90vh] flex flex-col">
+        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
             <h3 class="font-bold text-lg text-slate-800 uppercase tracking-tight">Sửa Hạng phòng</h3>
             <button onclick="toggleModal('editTypeModal')" class="text-slate-400 hover:text-slate-600"><i
                     class="fa-solid fa-xmark"></i></button>
         </div>
         <form id="editTypeForm" action="../actions/process_add_room_type.php" method="POST"
-            enctype="multipart/form-data" class="p-8 space-y-4">
+            enctype="multipart/form-data" class="p-8 space-y-4 overflow-y-auto">
             <input type="hidden" name="action" value="edit">
             <input type="hidden" name="type_id" id="edit_type_id">
             <div class="grid grid-cols-2 gap-4">

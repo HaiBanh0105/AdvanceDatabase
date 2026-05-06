@@ -98,15 +98,15 @@ window.onclick = function (event) {
 
     function filterRooms() {
         if (!tableBody) return;
-        const term = searchInput.value.toLowerCase();
-        const typeText = filterType.options[filterType.selectedIndex].text.toLowerCase();
+        const term = searchInput.value.toLowerCase().trim();
+        const typeText = filterType.options[filterType.selectedIndex].text.toLowerCase().trim();
         const typeVal = filterType.value;
-        const status = filterStatus.value.toLowerCase();
+        const status = filterStatus.value.toLowerCase().trim();
         tableBody.querySelectorAll('tr').forEach(row => {
             if (row.cells.length < 4) return;
-            const rNum = row.cells[0].innerText.toLowerCase();
-            const rType = row.cells[1].innerText.toLowerCase();
-            const rStatus = row.cells[2].innerText.toLowerCase();
+            const rNum = row.cells[0].textContent.toLowerCase().trim();
+            const rType = row.cells[1].textContent.toLowerCase().trim();
+            const rStatus = row.cells[2].textContent.toLowerCase().trim();
             row.style.display = (rNum.includes(term) && (typeVal === "" || rType === typeText) && (status ===
                 "" || rStatus.includes(status))) ? '' : 'none';
         });

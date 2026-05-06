@@ -125,12 +125,12 @@ function amenity_get_all()
 {
     $db = mongo_get_db();
     $count = $db->amenities->countDocuments([]);
-    if ($count === 0) {
-        $defaults = ['Wifi', 'Pool', 'Mini Bar', 'Ocean View', 'Balcony', 'Bathtub'];
-        foreach ($defaults as $amn) {
-            $db->amenities->insertOne(['name' => $amn]);
-        }
-    }
+    // if ($count === 0) {
+    //     $defaults = ['Wifi', 'Pool', 'Mini Bar', 'Ocean View', 'Balcony', 'Bathtub'];
+    //     foreach ($defaults as $amn) {
+    //         $db->amenities->insertOne(['name' => $amn]);
+    //     }
+    // }
     $cursor = $db->amenities->find([], ['sort' => ['name' => 1]]);
     $amenities = [];
     foreach ($cursor as $doc) {
