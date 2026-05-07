@@ -10,13 +10,26 @@ require_once '../config/mongodb.php';
 
 try {
     $mongo_db = mongo_get_db();
-    $now = new MongoDB\BSON\UTCDateTime();
 
-    $promotions = $mongo_db->promotions->find([
+    // 1. Lấy tất cả mã đang active và còn lượt
+    $all_promotions = $mongo_db->promotions->find([
         'status' => 'active',
-        'quantity' => ['$gt' => 0],
-        'expires_at' => ['$gt' => $now]
+        'quantity' => ['$gt' => 0]
     ])->toArray();
+
+    // 2. Lọc bằng PHP (Vì cần tính toán expires_at từ created_at + duration_day)
+    $promotions = [];
+    $now_timestamp = time();
+    foreach ($all_promotions as $promo) {
+        $created_ts = isset($promo['created_at']) ? $promo['created_at']->toDateTime()->getTimestamp() : $now_timestamp;
+        $duration_seconds = (isset($promo['duration_day']) ? (int)$promo['duration_day'] : 0) * 86400;
+        $expires_at = $created_ts + $duration_seconds;
+
+        if ($expires_at > $now_timestamp) {
+            $promo['expires_at'] = $expires_at;
+            $promotions[] = $promo;
+        }
+    }
 } catch (Exception $e) {
     $promotions = [];
 }
@@ -64,6 +77,10 @@ try {
                             </div>
                             <h4 class="text-lg font-bold text-slate-800 mb-3"><?= htmlspecialchars($promo['description']) ?>
                             </h4>
+                            <p class="text-sm text-slate-500 font-medium">
+                                <i class="fa-regular fa-clock text-slate-400 mr-1"></i> Hết hạn: <span
+                                    class="text-rose-500"><?= date('d/m/Y', $promo['expires_at']) ?></span>
+                            </p>
                             <div
                                 class="flex items-center justify-between mt-6 bg-slate-50 rounded-2xl p-2 border border-slate-100">
                                 <span

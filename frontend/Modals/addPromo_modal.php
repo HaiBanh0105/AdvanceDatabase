@@ -28,10 +28,10 @@
                         class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-slate-700">
                 </div>
                 <div class="col-span-2">
-                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Ngày hết
-                        hạn</label>
-                    <input type="datetime-local" name="expires_at" required
-                        class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Thời hạn
+                        (Số ngày hiệu lực)</label>
+                    <input type="number" name="duration_day" min="1" required placeholder="Ví dụ: 30 (Hiệu lực 30 ngày)"
+                        class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-slate-700">
                 </div>
                 <div class="col-span-2">
                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Mô tả chi

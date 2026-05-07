@@ -75,54 +75,60 @@ $promotions = $db->promotions->find($filter, ['sort' => ['created_at' => -1]])->
                 </thead>
                 <tbody class="divide-y divide-slate-100 text-sm">
                     <?php if (empty($promotions)): ?>
-                    <tr>
-                        <td colspan="6" class="px-6 py-8 text-center text-slate-500 italic">Không có mã giảm giá nào.
-                        </td>
-                    </tr>
+                        <tr>
+                            <td colspan="6" class="px-6 py-8 text-center text-slate-500 italic">Không có mã giảm giá nào.
+                            </td>
+                        </tr>
                     <?php else: ?>
-                    <?php foreach ($promotions as $promo):
-                            $created_at = isset($promo['created_at']) ? $promo['created_at']->toDateTime()->setTimezone(new DateTimeZone('Asia/Ho_Chi_Minh'))->format('d/m/Y') : 'N/A';
-                            $expires_at = isset($promo['expires_at']) ? $promo['expires_at']->toDateTime()->setTimezone(new DateTimeZone('Asia/Ho_Chi_Minh'))->format('d/m/Y H:i') : 'N/A';
-                            $expires_iso = isset($promo['expires_at']) ? $promo['expires_at']->toDateTime()->setTimezone(new DateTimeZone('Asia/Ho_Chi_Minh'))->format('Y-m-d\TH:i') : '';
+                        <?php foreach ($promotions as $promo):
+                            // Xử lý Ngày tạo và Hết hạn bằng duration_day
+                            $created_dt = isset($promo['created_at']) ? $promo['created_at']->toDateTime()->setTimezone(new DateTimeZone('Asia/Ho_Chi_Minh')) : new DateTime();
+                            $created_at = $created_dt->format('d/m/Y');
+
+                            $duration = isset($promo['duration_day']) ? (int)$promo['duration_day'] : 0;
+
+                            $expires_dt = clone $created_dt;
+                            $expires_dt->modify("+{$duration} days");
+                            $expires_at = $expires_dt->format('d/m/Y');
                         ?>
-                    <tr class="hover:bg-slate-50/50 transition">
-                        <td class="px-6 py-4">
-                            <p class="font-bold text-indigo-600 text-lg uppercase">
-                                <?= htmlspecialchars($promo['code']) ?></p>
-                            <span
-                                class="inline-block bg-red-100 text-red-600 px-2 py-0.5 rounded text-[10px] font-bold mt-1">-<?= $promo['discount_percent'] ?>%</span>
-                        </td>
-                        <td class="px-6 py-4 text-slate-600 max-w-xs truncate"
-                            title="<?= htmlspecialchars($promo['description']) ?>">
-                            <?= htmlspecialchars($promo['description']) ?>
-                        </td>
-                        <td class="px-6 py-4">
-                            <span class="font-bold text-slate-700"><?= $promo['quantity'] ?? 0 ?></span>
-                        </td>
-                        <td class="px-6 py-4 text-slate-500 text-xs">
-                            <?= $created_at ?>
-                        </td>
-                        <td class="px-6 py-4 text-slate-500 text-xs">
-                            <?= $expires_at ?>
-                        </td>
-                        <td class="px-6 py-4 text-right space-x-2">
-                            <!-- Nút Sửa -->
-                            <button type="button"
-                                onclick="openEditModal('<?= $promo['_id'] ?>', '<?= htmlspecialchars($promo['code']) ?>', <?= $promo['discount_percent'] ?>, '<?= htmlspecialchars($promo['description']) ?>', <?= $promo['quantity'] ?? 0 ?>, '<?= $expires_iso ?>')"
-                                class="bg-amber-100 text-amber-600 px-3 py-1.5 rounded-lg text-[10px] font-bold hover:bg-amber-200 transition"
-                                title="Chỉnh sửa"><i class="fa-solid fa-pen"></i></button>
-                            <!-- Nút Xóa -->
-                            <form action="../actions/process_promotion.php" method="POST" class="inline">
-                                <input type="hidden" name="action" value="delete">
-                                <input type="hidden" name="id" value="<?= $promo['_id'] ?>">
-                                <button type="submit"
-                                    onclick="return confirm('Bạn có chắc chắn muốn xóa mã này không?')"
-                                    class="bg-red-100 text-red-600 px-3 py-1.5 rounded-lg text-[10px] font-bold hover:bg-red-200 transition"><i
-                                        class="fa-solid fa-trash"></i></button>
-                            </form>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
+                            <tr class="hover:bg-slate-50/50 transition">
+                                <td class="px-6 py-4">
+                                    <p class="font-bold text-indigo-600 text-lg uppercase">
+                                        <?= htmlspecialchars($promo['code']) ?></p>
+                                    <span
+                                        class="inline-block bg-red-100 text-red-600 px-2 py-0.5 rounded text-[10px] font-bold mt-1">-<?= $promo['discount_percent'] ?>%</span>
+                                </td>
+                                <td class="px-6 py-4 text-slate-600 max-w-xs truncate"
+                                    title="<?= htmlspecialchars($promo['description']) ?>">
+                                    <?= htmlspecialchars($promo['description']) ?>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="font-bold text-slate-700"><?= $promo['quantity'] ?? 0 ?></span>
+                                </td>
+                                <td class="px-6 py-4 text-slate-500 text-xs">
+                                    <?= $created_at ?>
+                                </td>
+                                <td class="px-6 py-4 text-slate-500 text-xs">
+                                    <?= $expires_at ?> (<?= $duration ?> ngày)
+                                </td>
+                                <td class="px-6 py-4 text-right space-x-2">
+                                    <!-- Nút Sửa -->
+                                    <button type="button"
+                                        onclick="openEditModal('<?= $promo['_id'] ?>', '<?= htmlspecialchars($promo['code']) ?>', <?= $promo['discount_percent'] ?>, '<?= htmlspecialchars($promo['description']) ?>', <?= $promo['quantity'] ?? 0 ?>, <?= $duration ?>)"
+                                        class="bg-amber-100 text-amber-600 px-3 py-1.5 rounded-lg text-[10px] font-bold hover:bg-amber-200 transition"
+                                        title="Chỉnh sửa"><i class="fa-solid fa-pen"></i></button>
+                                    <!-- Nút Xóa -->
+                                    <form action="../actions/process_promotion.php" method="POST" class="inline">
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="id" value="<?= $promo['_id'] ?>">
+                                        <button type="submit"
+                                            onclick="return confirm('Bạn có chắc chắn muốn xóa mã này không?')"
+                                            class="bg-red-100 text-red-600 px-3 py-1.5 rounded-lg text-[10px] font-bold hover:bg-red-200 transition"><i
+                                                class="fa-solid fa-trash"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
                     <?php endif; ?>
                 </tbody>
             </table>
@@ -141,44 +147,41 @@ $promotions = $db->promotions->find($filter, ['sort' => ['created_at' => -1]])->
 
     <script src="../assets/js/toast.js"></script>
     <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        let hasParams = false;
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            let hasParams = false;
 
-        if (urlParams.get('error') === 'invalid_date') {
-            showToast('Lỗi: Ngày hết hạn không được nhỏ hơn thời gian hiện tại!', 'error');
-            hasParams = true;
-        } else if (urlParams.get('msg') === 'success') {
-            showToast('Thao tác thành công!', 'success');
-            hasParams = true;
+            if (urlParams.get('msg') === 'success') {
+                showToast('Thao tác thành công!', 'success');
+                hasParams = true;
+            }
+
+            if (hasParams) {
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        });
+
+        function openAddModal() {
+            document.getElementById('addPromoModal').classList.remove('hidden');
         }
 
-        if (hasParams) {
-            window.history.replaceState({}, document.title, window.location.pathname);
+        function closeAddModal() {
+            document.getElementById('addPromoModal').classList.add('hidden');
         }
-    });
 
-    function openAddModal() {
-        document.getElementById('addPromoModal').classList.remove('hidden');
-    }
+        function openEditModal(id, code, discount, desc, quantity, duration) {
+            document.getElementById('edit_promo_id').value = id;
+            document.getElementById('edit_promo_code').value = code;
+            document.getElementById('edit_promo_discount').value = discount;
+            document.getElementById('edit_promo_description').value = desc;
+            document.getElementById('edit_promo_quantity').value = quantity;
+            document.getElementById('edit_promo_duration').value = duration;
+            document.getElementById('editPromoModal').classList.remove('hidden');
+        }
 
-    function closeAddModal() {
-        document.getElementById('addPromoModal').classList.add('hidden');
-    }
-
-    function openEditModal(id, code, discount, desc, quantity, expires_iso) {
-        document.getElementById('edit_promo_id').value = id;
-        document.getElementById('edit_promo_code').value = code;
-        document.getElementById('edit_promo_discount').value = discount;
-        document.getElementById('edit_promo_description').value = desc;
-        document.getElementById('edit_promo_quantity').value = quantity;
-        document.getElementById('edit_promo_expires').value = expires_iso;
-        document.getElementById('editPromoModal').classList.remove('hidden');
-    }
-
-    function closeEditModal() {
-        document.getElementById('editPromoModal').classList.add('hidden');
-    }
+        function closeEditModal() {
+            document.getElementById('editPromoModal').classList.add('hidden');
+        }
     </script>
 </body>
 

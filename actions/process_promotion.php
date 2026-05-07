@@ -15,42 +15,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $discount = (int)$_POST['discount'];
         $description = trim($_POST['description']);
         $quantity = (int)($_POST['quantity'] ?? 0);
-        $expires_at = $_POST['expires_at'] ?? '';
-        
-        // Kiểm tra hợp lệ: Ngày hết hạn không được bé hơn hiện tại
-        if (!empty($expires_at) && strtotime($expires_at) < time()) {
-            header("Location: ../frontend/admin_promotions.php?error=invalid_date");
-            exit();
-        }
+        $duration_day = (int)($_POST['duration_day'] ?? 0);
 
-        // Chuyển đổi thời gian sang chuẩn của MongoDB
-        $expires_mongo = !empty($expires_at) ? new MongoDB\BSON\UTCDateTime(strtotime($expires_at) * 1000) : new MongoDB\BSON\UTCDateTime();
-
-        if (!empty($code) && $discount > 0) {
-            promotion_insert($code, $discount, $description, $quantity, $expires_mongo);
+        if (!empty($code) && $discount > 0 && $duration_day > 0) {
+            // Lưu duration_day thay vì expires_at
+            promotion_insert($code, $discount, $description, $quantity, $duration_day);
         }
-    } 
-    elseif ($action === 'edit') {
+    } elseif ($action === 'edit') {
         $id = $_POST['id'] ?? '';
         $code = strtoupper(trim($_POST['code']));
         $discount = (int)$_POST['discount'];
         $description = trim($_POST['description']);
         $quantity = (int)($_POST['quantity'] ?? 0);
-        $expires_at = $_POST['expires_at'] ?? '';
+        $duration_day = (int)($_POST['duration_day'] ?? 0);
 
-        // Kiểm tra hợp lệ: Ngày hết hạn không được bé hơn hiện tại
-        if (!empty($expires_at) && strtotime($expires_at) < time()) {
-            header("Location: ../frontend/admin_promotions.php?error=invalid_date");
-            exit();
+        if (!empty($id) && !empty($code) && $discount > 0 && $duration_day > 0) {
+            // Lưu duration_day
+            promotion_update($id, $code, $discount, $description, $quantity, $duration_day);
         }
-        
-        $expires_mongo = !empty($expires_at) ? new MongoDB\BSON\UTCDateTime(strtotime($expires_at) * 1000) : new MongoDB\BSON\UTCDateTime();
-
-        if (!empty($id) && !empty($code) && $discount > 0) {
-            promotion_update($id, $code, $discount, $description, $quantity, $expires_mongo);
-        }
-    }
-    elseif ($action === 'delete') {
+    } elseif ($action === 'delete') {
         $id = $_POST['id'] ?? '';
         if (!empty($id)) {
             promotion_delete($id);
