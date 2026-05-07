@@ -120,6 +120,10 @@ function booking_create_admin_walkin($employee_id, $room_id, $check_in, $check_o
         if (!$customer_id) {
             db_execute("INSERT INTO Customer (full_name, cccd, phone) VALUES (?, ?, ?)", $rep_name, $rep_cccd, $guest_phone);
             $customer_id = db_query_value("SELECT customer_id FROM Customer WHERE cccd = ?", $rep_cccd);
+        } else {
+            if ($guest_phone !== '') {
+                db_execute("UPDATE Customer SET phone = ? WHERE customer_id = ?", $guest_phone, $customer_id);
+            }
         }
 
         $sql1 = "INSERT INTO Booking (customer_id, check_in_planned, check_out_planned, total_price, payment_status, booking_status)

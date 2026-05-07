@@ -93,10 +93,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $unit_price    = $room_info['price_per_day'];
         }
 
+        $rep_cccd = trim($guests[$rep_index]['cccd'] ?? '');
+        $existing_rep = booking_get_guest_by_cccd($rep_cccd);
+        $confirm_phone = (int)($_POST['confirm_phone'] ?? 0);
+
         if ($guest_phone !== '') {
-            if (booking_check_phone_exists($guest_phone)) {
+            // 1. Kiểm tra xem số điện thoại này đã bị khách hàng KHÁC sử dụng chưa
+            $exclude_id = $existing_rep ? $existing_rep['customer_id'] : 0;
+
+            if ($exclude_id > 0) {
+                $is_duplicate = db_query_value("SELECT COUNT(*) FROM Customer WHERE phone = ? AND customer_id != ?", $guest_phone, $exclude_id) > 0;
+            } else {
+                $is_duplicate = db_query_value("SELECT COUNT(*) FROM Customer WHERE phone = ?", $guest_phone) > 0;
+            }
+
+            if ($is_duplicate) {
                 header("Location: ../frontend/admin_bookings.php?error=duplicate_phone");
                 exit();
+            }
+
+            // 2. Kiểm tra nếu khách CŨ đổi sang số MỚI (chưa có xác nhận từ Modal)
+            if ($existing_rep) {
+                $old_phone = trim($existing_rep['phone'] ?? '');
+                if ($old_phone !== '' && $old_phone !== $guest_phone && $confirm_phone === 0) {
+                    header("Location: ../frontend/admin_bookings.php?error=phone_confirm_required");
+                    exit();
+                }
             }
         }
 
@@ -230,6 +252,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             ]);
         } else {
             echo json_encode(['status' => 'not_found']);
+        }
+        exit();
+    } elseif ($action === 'check_phone') {
+        ob_start();
+        $phone = trim($_GET['phone'] ?? '');
+        $cccd = trim($_GET['cccd'] ?? '');
+
+        $guest_by_phone = db_query_one("SELECT customer_id, full_name, cccd FROM Customer WHERE phone = ?", $phone);
+
+        ob_end_clean();
+        header('Content-Type: application/json');
+        if ($guest_by_phone) {
+            if ($cccd !== '' && $guest_by_phone['cccd'] === $cccd) {
+                echo json_encode(['status' => 'ok']);
+            } else {
+                echo json_encode([
+                    'status' => 'duplicate',
+                    'message' => 'Số điện thoại này đã được đăng ký bởi khách hàng khác.'
+                ]);
+            }
+        } else {
+            echo json_encode(['status' => 'ok']);
         }
         exit();
     } elseif ($action === 'get_room_timeline') {
