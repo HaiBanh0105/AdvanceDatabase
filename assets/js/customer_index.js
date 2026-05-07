@@ -167,3 +167,229 @@
             }
         });
     });
+
+// --- LIVE CHAT WIDGET ---
+document.addEventListener('DOMContentLoaded', () => {
+    const chatWindow = document.getElementById('chatWindow');
+    const chatInput = document.getElementById('chatInput');
+    const sendChatBtn = document.getElementById('sendChatBtn');
+    const chatMessages = document.getElementById('chatMessages');
+    const chatNotifBadge = document.getElementById('chatNotifBadge');
+    const chatWidget = document.getElementById('chatWidget');
+    const chatBubble = document.getElementById('chatBubble');
+
+    let chatInterval = null;
+    let lastMessageCount = 0;
+
+    // Hàm bật/tắt cửa sổ Chat (Gắn vào window để HTML có thể gọi)
+    window.toggleChat = function() {
+        let prevBubbleLeft = 0, prevBubbleTop = 0;
+        if (chatBubble) {
+            const rect = chatBubble.getBoundingClientRect();
+            prevBubbleLeft = rect.left;
+            prevBubbleTop = rect.top;
+        }
+
+        chatWindow.classList.toggle('hidden');
+        chatWindow.classList.toggle('flex');
+        if (!chatWindow.classList.contains('hidden')) {
+            chatNotifBadge.classList.add('hidden'); // Ẩn thông báo khi mở chat
+            chatNotifBadge.classList.remove('animate-pulse', 'shadow-[0_0_10px_rgba(239,68,68,1)]');
+            
+            // Cuộn xuống tin nhắn cuối cùng ngay khi mở cửa sổ chat
+            setTimeout(() => {
+                if (chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
+            }, 50);
+
+            loadMessages();
+            chatInterval = setInterval(loadMessages, 3000); // Làm mới mỗi 3s khi đang mở
+            setTimeout(() => chatInput.focus(), 100);
+        } else {
+            clearInterval(chatInterval); // Dừng làm mới liên tục để tiết kiệm tài nguyên
+        }
+
+        // Khắc phục lỗi Widget bị văng ra khỏi màn hình khi ở sát góc
+        if (chatWidget && (chatWidget.style.left || chatWidget.style.top)) {
+            requestAnimationFrame(() => {
+                const widgetWidth = chatWidget.offsetWidth;
+                const widgetHeight = chatWidget.offsetHeight;
+                const bubbleWidth = chatBubble.offsetWidth;
+                const bubbleHeight = chatBubble.offsetHeight;
+
+                // 1. Tính toán để giữ Bong bóng Chat đứng yên tại chỗ
+                let idealLeft = prevBubbleLeft - widgetWidth + bubbleWidth;
+                let idealTop = prevBubbleTop - widgetHeight + bubbleHeight;
+
+                // 2. Giới hạn để toàn bộ khung Chat không lọt ra ngoài mép màn hình (Cách lề 20px)
+                const padding = 20;
+                let newLeft = Math.max(padding, Math.min(idealLeft, window.innerWidth - widgetWidth - padding));
+                let newTop = Math.max(padding, Math.min(idealTop, window.innerHeight - widgetHeight - padding));
+
+                // 3. Kích hoạt chuyển động trượt mượt mà nếu nó bị đẩy vào trong màn hình
+                chatWidget.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+                chatWidget.style.left = newLeft + 'px';
+                chatWidget.style.top = newTop + 'px';
+
+                // Xóa transition sau 300ms để thao tác kéo thả sau đó không bị delay
+                setTimeout(() => {
+                    chatWidget.style.transition = '';
+                }, 300);
+            });
+        }
+    };
+
+    // Hàm tải danh sách tin nhắn từ Server
+    function loadMessages() {
+        const isOpen = chatWindow && !chatWindow.classList.contains('hidden') ? 1 : 0;
+        fetch(`../actions/process_chat.php?action=fetch&is_open=${isOpen}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Chỉ render lại nếu có tin nhắn mới
+                    if (data.data.length > lastMessageCount) {
+                        lastMessageCount = data.data.length;
+                        renderMessages(data.data);
+                    }
+                    // Hiện chấm đỏ phát sáng nếu có tin mới từ Admin mà khung chat đang ẩn
+                    if (data.unread_admin_count > 0 && !isOpen) {
+                        chatNotifBadge.classList.remove('hidden');
+                        chatNotifBadge.classList.add('animate-pulse', 'shadow-[0_0_10px_rgba(239,68,68,1)]');
+                    } else if (isOpen) {
+                        chatNotifBadge.classList.add('hidden');
+                        chatNotifBadge.classList.remove('animate-pulse', 'shadow-[0_0_10px_rgba(239,68,68,1)]');
+                    }
+                }
+            })
+            .catch(err => console.error("Chat error: ", err));
+    }
+
+    // Hàm vẽ giao diện tin nhắn
+    function renderMessages(messages) {
+        if (!chatMessages) return;
+        chatMessages.innerHTML = '<div class="text-center text-[10px] text-slate-400 font-bold uppercase my-2">Bắt đầu cuộc trò chuyện</div>';
+        messages.forEach(m => {
+            const isUser = !m.is_admin;
+            const align = isUser ? 'self-end' : 'self-start';
+            const bg = isUser ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 text-slate-700';
+            const timeAlign = isUser ? 'text-right pr-1' : 'text-left pl-1';
+            
+            chatMessages.innerHTML += `
+            <div class="max-w-[80%] ${align}">
+                <div class="px-4 py-2.5 rounded-2xl ${bg} text-sm inline-block break-words shadow-sm">${m.message}</div>
+                <div class="text-[9px] text-slate-400 mt-1 font-bold ${timeAlign}">${m.time}</div>
+            </div>`;
+        });
+        // Tự động cuộn xuống tin nhắn mới nhất
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // Hàm gửi tin nhắn
+    function sendMessage() {
+        const msg = chatInput.value.trim();
+        if (!msg) return;
+
+        const formData = new FormData();
+        formData.append('action', 'send');
+        formData.append('message', msg);
+
+        chatInput.value = ''; // Xóa trắng khung nhập
+        
+        fetch('../actions/process_chat.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') loadMessages();
+        });
+    }
+
+    if (sendChatBtn) sendChatBtn.addEventListener('click', sendMessage);
+    if (chatInput) {
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+    }
+
+    // Ngầm kiểm tra tin nhắn mới mỗi 5s để hiện chấm đỏ dù khách đang không mở khung chat
+    setInterval(() => {
+        if (chatWindow && chatWindow.classList.contains('hidden')) {
+            loadMessages();
+        }
+    }, 5000);
+    
+    // Tải tin nhắn lần đầu khi tải trang
+    loadMessages();
+
+    // --- DRAG AND DROP CHAT WIDGET ---
+    let isDragging = false;
+    let didMove = false;
+    let startX, startY, initialLeft, initialTop;
+
+    if (chatBubble && chatWidget) {
+        // Hỗ trợ chuột máy tính
+        chatBubble.addEventListener('mousedown', dragStart);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', dragEnd);
+
+        // Hỗ trợ cảm ứng trên điện thoại
+        chatBubble.addEventListener('touchstart', dragStart, {passive: false});
+        document.addEventListener('touchmove', drag, {passive: false});
+        document.addEventListener('touchend', dragEnd);
+
+        // Phân biệt giữa "Kéo" và "Click"
+        chatBubble.addEventListener('click', (e) => {
+            if (didMove) {
+                e.preventDefault(); // Nếu vừa kéo xong thì không mở chat
+                e.stopPropagation();
+            } else {
+                window.toggleChat(); // Nếu chỉ click nhẹ thì mở chat
+            }
+        });
+    }
+
+    function dragStart(e) {
+        if (e.type === 'mousedown') e.preventDefault(); // Ngăn bôi đen text khi kéo
+        isDragging = true;
+        didMove = false;
+        chatWidget.style.transition = ''; // Xóa hiệu ứng trượt nếu đang có để kéo tay không bị lag
+        
+        startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+        startY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+        
+        const rect = chatWidget.getBoundingClientRect();
+        initialLeft = rect.left;
+        initialTop = rect.top;
+        
+        // Vô hiệu hóa bottom/right để dùng absolute left/top (cho phép widget di chuyển tự do)
+        chatWidget.style.bottom = 'auto';
+        chatWidget.style.right = 'auto';
+        chatWidget.style.left = initialLeft + 'px';
+        chatWidget.style.top = initialTop + 'px';
+    }
+
+    function drag(e) {
+        if (!isDragging) return;
+        if (e.type === 'touchmove') e.preventDefault(); // Ngăn cuộn trang điện thoại khi đang kéo
+        
+        const currentX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+        const currentY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+        
+        const dx = currentX - startX;
+        const dy = currentY - startY;
+        
+        // Khác biệt quá 3px mới tính là đang kéo (Tránh lỗi tay run khi click)
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) didMove = true;
+        
+        // Tính toán vị trí mới và giới hạn không cho kéo văng ra ngoài màn hình
+        let newX = Math.max(0, Math.min(initialLeft + dx, window.innerWidth - chatWidget.offsetWidth));
+        let newY = Math.max(0, Math.min(initialTop + dy, window.innerHeight - chatWidget.offsetHeight));
+        
+        chatWidget.style.left = newX + 'px';
+        chatWidget.style.top = newY + 'px';
+    }
+
+    function dragEnd() {
+        isDragging = false;
+    }
+});

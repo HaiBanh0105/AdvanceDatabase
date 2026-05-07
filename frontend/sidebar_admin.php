@@ -29,6 +29,10 @@ $current_page = basename($_SERVER['PHP_SELF']);
             class="flex items-center gap-3 p-3 rounded-xl transition <?php echo ($current_page == 'admin_promotions.php') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'; ?>">
             <i class="fa-solid fa-ticket w-5"></i> Quản lý Khuyến mãi
         </a>
+        <a href="admin_chats.php"
+            class="flex items-center gap-3 p-3 rounded-xl transition <?php echo ($current_page == 'admin_chats.php') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'; ?>">
+            <i class="fa-solid fa-comments w-5"></i> Tin nhắn Hỗ trợ
+        </a>
         <a href="admin_amenities.php"
             class="flex items-center gap-3 p-3 rounded-xl transition <?php echo ($current_page == 'admin_amenities.php') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'; ?>">
             <i class="fa-solid fa-star w-5"></i> Quản lý Tiện ích

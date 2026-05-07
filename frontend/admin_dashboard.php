@@ -108,24 +108,24 @@ $top_rooms = db_query("SELECT * FROM vw_TopRoomsByRevenue WHERE $rank_column <= 
                         </thead>
                         <tbody class="divide-y divide-slate-50">
                             <?php if (empty($room_types)): ?>
-                                <tr>
-                                    <td colspan="2" class="px-6 py-4 text-center text-slate-400">Chưa có hạng phòng nào</td>
-                                </tr>
+                            <tr>
+                                <td colspan="2" class="px-6 py-4 text-center text-slate-400">Chưa có hạng phòng nào</td>
+                            </tr>
                             <?php else: ?>
-                                <?php foreach ($room_types as $rt): ?>
-                                    <tr class="hover:bg-slate-50/50 transition">
-                                        <td class="px-6 py-4">
-                                            <p class="font-bold text-slate-700"><?= htmlspecialchars($rt['name']) ?></p>
-                                            <p class="text-xs text-slate-500 mt-1"><i
-                                                    class="fa-solid fa-user-group text-slate-400 mr-1"></i> Tối đa
-                                                <?= $rt['capacity'] ?> khách</p>
-                                        </td>
-                                        <td class="px-6 py-4 text-right font-black text-indigo-600 uppercase">
-                                            <?= number_format($rt['price_per_day'], 0, ',', '.') ?>đ<span
-                                                class="text-[10px] text-slate-400 block font-bold">/ ĐÊM</span>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
+                            <?php foreach ($room_types as $rt): ?>
+                            <tr class="hover:bg-slate-50/50 transition">
+                                <td class="px-6 py-4">
+                                    <p class="font-bold text-slate-700"><?= htmlspecialchars($rt['name']) ?></p>
+                                    <p class="text-xs text-slate-500 mt-1"><i
+                                            class="fa-solid fa-user-group text-slate-400 mr-1"></i> Tối đa
+                                        <?= $rt['capacity'] ?> khách</p>
+                                </td>
+                                <td class="px-6 py-4 text-right font-black text-indigo-600 uppercase">
+                                    <?= number_format($rt['price_per_day'], 0, ',', '.') ?>đ<span
+                                        class="text-[10px] text-slate-400 block font-bold">/ ĐÊM</span>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
                             <?php endif; ?>
                         </tbody>
                     </table>
@@ -140,14 +140,15 @@ $top_rooms = db_query("SELECT * FROM vw_TopRoomsByRevenue WHERE $rank_column <= 
                         Doanh Thu Cao Nhất</h2>
                     <form method="GET" action="" id="topRoomsForm" class="m-0 flex gap-2">
                         <!-- Thêm ô Chọn Hàm Xếp Hạng -->
-                        <select name="rank_type" onchange="document.getElementById('topRoomsForm').submit()"
+                        <!-- Uncomment for debug -->
+                        <!-- <select name="rank_type" onchange="document.getElementById('topRoomsForm').submit()"
                             class="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white cursor-pointer hover:bg-slate-50 transition">
                             <option value="dense_rank" <?= $rank_type == 'dense_rank' ? 'selected' : '' ?>>DENSE_RANK()
                             </option>
                             <option value="rank" <?= $rank_type == 'rank' ? 'selected' : '' ?>>RANK()</option>
                             <option value="row_number" <?= $rank_type == 'row_number' ? 'selected' : '' ?>>ROW_NUMBER()
                             </option>
-                        </select>
+                        </select> -->
                         <select name="top" onchange="document.getElementById('topRoomsForm').submit()"
                             class="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white cursor-pointer hover:bg-slate-50 transition">
                             <option value="3" <?= $top_limit == 3 ? 'selected' : '' ?>>Top 3</option>
@@ -169,40 +170,40 @@ $top_rooms = db_query("SELECT * FROM vw_TopRoomsByRevenue WHERE $rank_column <= 
                         </thead>
                         <tbody class="divide-y divide-slate-50">
                             <?php if (empty($top_rooms)): ?>
-                                <tr>
-                                    <td colspan="3" class="px-6 py-12 text-center text-slate-400 italic">Chưa có dữ liệu
-                                        doanh thu</td>
-                                </tr>
+                            <tr>
+                                <td colspan="3" class="px-6 py-12 text-center text-slate-400 italic">Chưa có dữ liệu
+                                    doanh thu</td>
+                            </tr>
                             <?php else: ?>
-                                <?php foreach ($top_rooms as $tr): ?>
-                                    <?php $display_rank = $tr[$rank_column]; ?>
-                                    <tr class="hover:bg-slate-50/50 transition">
-                                        <td class="px-6 py-4 text-center">
-                                            <?php if ($display_rank == 1): ?>
-                                                <span
-                                                    class="bg-amber-100 text-amber-600 px-3 py-1 rounded-full text-xs font-black shadow-sm"><i
-                                                        class="fa-solid fa-medal mr-1"></i> 1</span>
-                                            <?php elseif ($display_rank == 2): ?>
-                                                <span
-                                                    class="bg-slate-200 text-slate-600 px-3 py-1 rounded-full text-xs font-black shadow-sm"><i
-                                                        class="fa-solid fa-medal mr-1"></i> 2</span>
-                                            <?php else: ?>
-                                                <span
-                                                    class="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-xs font-black shadow-sm"><i
-                                                        class="fa-solid fa-medal mr-1"></i> <?= $display_rank ?></span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td class="px-6 py-4">
-                                            <p class="font-black text-slate-700 text-lg">
-                                                P.<?= htmlspecialchars($tr['room_number']) ?></p>
-                                            <p class="text-slate-500 text-[10px] font-bold uppercase mt-1 tracking-widest">
-                                                <?= htmlspecialchars($tr['type_name']) ?></p>
-                                        </td>
-                                        <td class="px-6 py-4 text-right font-black text-emerald-600 text-lg">
-                                            <?= number_format($tr['total_revenue'], 0, ',', '.') ?>đ
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
+                            <?php foreach ($top_rooms as $tr): ?>
+                            <?php $display_rank = $tr[$rank_column]; ?>
+                            <tr class="hover:bg-slate-50/50 transition">
+                                <td class="px-6 py-4 text-center">
+                                    <?php if ($display_rank == 1): ?>
+                                    <span
+                                        class="bg-amber-100 text-amber-600 px-3 py-1 rounded-full text-xs font-black shadow-sm"><i
+                                            class="fa-solid fa-medal mr-1"></i> 1</span>
+                                    <?php elseif ($display_rank == 2): ?>
+                                    <span
+                                        class="bg-slate-200 text-slate-600 px-3 py-1 rounded-full text-xs font-black shadow-sm"><i
+                                            class="fa-solid fa-medal mr-1"></i> 2</span>
+                                    <?php else: ?>
+                                    <span
+                                        class="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-xs font-black shadow-sm"><i
+                                            class="fa-solid fa-medal mr-1"></i> <?= $display_rank ?></span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <p class="font-black text-slate-700 text-lg">
+                                        P.<?= htmlspecialchars($tr['room_number']) ?></p>
+                                    <p class="text-slate-500 text-[10px] font-bold uppercase mt-1 tracking-widest">
+                                        <?= htmlspecialchars($tr['type_name']) ?></p>
+                                </td>
+                                <td class="px-6 py-4 text-right font-black text-emerald-600 text-lg">
+                                    <?= number_format($tr['total_revenue'], 0, ',', '.') ?>đ
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
                             <?php endif; ?>
                         </tbody>
                     </table>
@@ -216,7 +217,7 @@ $top_rooms = db_query("SELECT * FROM vw_TopRoomsByRevenue WHERE $rank_column <= 
             </div>
             <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 p-6">
                 <?php foreach ($rooms as $r): ?>
-                    <?php
+                <?php
                     $status_class = '';
                     $status_text = '';
                     if ($r['status'] == 'available') {
@@ -233,23 +234,23 @@ $top_rooms = db_query("SELECT * FROM vw_TopRoomsByRevenue WHERE $rank_column <= 
                         $status_text = 'Bảo trì';
                     }
                     ?>
+                <div
+                    class="border border-slate-200 rounded-xl p-4 text-center hover:border-indigo-500 transition cursor-pointer group <?= $r['status'] != 'available' ? 'bg-slate-50' : '' ?>">
+                    <p class="text-xs font-bold text-slate-400 mb-1">PHÒNG</p>
+                    <h4
+                        class="text-xl font-black <?= $r['status'] == 'available' ? 'text-slate-800 group-hover:text-indigo-600' : 'text-slate-400' ?>">
+                        <?= htmlspecialchars($r['room_number']) ?></h4>
                     <div
-                        class="border border-slate-200 rounded-xl p-4 text-center hover:border-indigo-500 transition cursor-pointer group <?= $r['status'] != 'available' ? 'bg-slate-50' : '' ?>">
-                        <p class="text-xs font-bold text-slate-400 mb-1">PHÒNG</p>
-                        <h4
-                            class="text-xl font-black <?= $r['status'] == 'available' ? 'text-slate-800 group-hover:text-indigo-600' : 'text-slate-400' ?>">
-                            <?= htmlspecialchars($r['room_number']) ?></h4>
-                        <div
-                            class="mt-2 inline-block <?= $status_class ?> px-2 py-0.5 rounded text-[9px] font-bold uppercase">
-                            <?= $status_text ?></div>
-                    </div>
+                        class="mt-2 inline-block <?= $status_class ?> px-2 py-0.5 rounded text-[9px] font-bold uppercase">
+                        <?= $status_text ?></div>
+                </div>
                 <?php endforeach; ?>
             </div>
         </div>
     </main>
 
     <script>
-        console.log("Admin Dashboard Loaded");
+    console.log("Admin Dashboard Loaded");
     </script>
 </body>
 

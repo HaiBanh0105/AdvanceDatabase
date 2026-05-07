@@ -413,6 +413,49 @@ $all_amenities = amenity_get_all();
     include 'footer.php';
     ?>
 
+    <!-- CHAT WIDGET KÉO THẢ -->
+    <div id="chatWidget" class="fixed z-[100] bottom-6 right-6 flex flex-col items-end">
+        <!-- Cửa sổ Chat -->
+        <div id="chatWindow"
+            class="hidden flex-col w-80 md:w-96 max-h-[80vh] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden mb-4 transform transition-all">
+            <div class="bg-indigo-600 p-4 flex justify-between items-center text-white shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center"><i
+                            class="fa-solid fa-headset text-sm"></i></div>
+                    <div>
+                        <h3 class="font-bold text-sm">Hỗ trợ trực tuyến</h3>
+                        <p class="text-[10px] text-indigo-200">Chúng tôi luôn sẵn sàng hỗ trợ</p>
+                    </div>
+                </div>
+                <button onclick="toggleChat()" class="text-indigo-200 hover:text-white transition"><i
+                        class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="chatMessages"
+                class="flex-1 p-4 h-[400px] overflow-y-auto bg-slate-50 space-y-3 flex flex-col shrink"
+                style="scrollbar-width: thin;">
+                <div class="text-center text-[10px] text-slate-400 font-bold uppercase my-2">Bắt đầu cuộc trò chuyện
+                </div>
+            </div>
+            <div class="p-3 bg-white border-t border-slate-100 flex gap-2 shrink-0">
+                <input type="text" id="chatInput"
+                    class="flex-1 bg-slate-100 border-none rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                    placeholder="Nhập tin nhắn...">
+                <button id="sendChatBtn"
+                    class="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center hover:bg-indigo-700 transition shrink-0"><i
+                        class="fa-solid fa-paper-plane text-xs"></i></button>
+            </div>
+        </div>
+
+        <!-- Bong bóng Chat -->
+        <div id="chatBubble"
+            class="w-14 h-14 bg-indigo-600 rounded-full shadow-2xl flex items-center justify-center cursor-pointer hover:bg-indigo-700 transition-colors relative group">
+            <i
+                class="fa-solid fa-comments text-white text-2xl group-hover:scale-110 transition-transform pointer-events-none"></i>
+            <span id="chatNotifBadge"
+                class="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white hidden pointer-events-none"></span>
+        </div>
+    </div>
+
     <script src="../assets/js/toast.js"></script>
     <script src="../assets/js/customer_index.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
