@@ -140,8 +140,56 @@ $all_amenities = amenity_get_all();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grand Horizon - Trang chủ Khách hàng</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Italianno&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Italianno&family=Viaoda+Libre&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                fontFamily: {
+                    sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    italianno: ['"Italianno"', 'cursive'],
+                    viaoda: ['"Viaoda Libre"', 'serif']
+                },
+                keyframes: {
+                    shine: {
+                        '100%': {
+                            left: '200%'
+                        },
+                    }
+                }
+            }
+        }
+    }
+    </script>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: #f8fafc;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #818cf8;
+    }
+    </style>
 </head>
 
 <body class="bg-slate-50 text-slate-800">
@@ -149,142 +197,200 @@ $all_amenities = amenity_get_all();
     <?php include 'navbar_customer.php'; ?>
 
     <!-- Hero Section -->
-    <div class="relative h-[60vh] bg-slate-900 flex items-center justify-center overflow-hidden">
-        <img src="https://images.unsplash.com/photo-1542314831-c6a4d14d8373?auto=format&fit=crop&q=80"
-            class="absolute inset-0 w-full h-full object-cover opacity-40">
-        <div class="relative z-10 text-center px-4">
-            <h1 class="text-5xl md:text-7xl font-black text-white mb-6 tracking-tight drop-shadow-lg">Nơi nghỉ dưỡng
-                hoàn hảo</h1>
-            <p class="text-xl text-slate-200 font-medium max-w-2xl mx-auto drop-shadow">Trải nghiệm dịch vụ đẳng cấp 5
-                sao với không gian sang trọng và tiện nghi hiện đại.</p>
+    <div id="heroContainer" class="relative h-[80vh] bg-slate-900 flex items-center justify-center overflow-hidden">
+        <img id="heroImage"
+            src="https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=2070&auto=format&fit=crop"
+            class="absolute inset-0 w-full h-full object-cover opacity-40 scale-110 transition-transform duration-100 ease-out will-change-transform">
+
+        <div class="relative z-10 text-center px-4 pointer-events-none min-h-[150px]">
+            <h1 id="heroTitle"
+                class="font-italianno text-7xl md:text-9xl text-white mb-2 tracking-wide opacity-90 drop-shadow-lg min-h-[100px]">
+            </h1>
+            <p id="heroDesc"
+                class="font-italianno text-3xl md:text-5xl text-slate-200 max-w-3xl mx-auto drop-shadow-lg min-h-[50px]">
+            </p>
         </div>
     </div>
 
     <!-- Bộ lọc Tìm kiếm Nhanh (Search Bar) -->
-    <div class="max-w-4xl mx-auto px-4 relative z-20 -mt-12">
-        <form id="searchBar" action="#rooms" method="GET"
-            class="bg-white p-4 rounded-2xl shadow-xl grid grid-cols-1 md:grid-cols-4 gap-4 border border-slate-100">
-            <div class="w-full relative">
-                <i class="fa-regular fa-calendar-check absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500"></i>
-                <input type="date" name="check_in" value="<?= htmlspecialchars($search_in) ?>"
-                    min="<?= date('Y-m-d') ?>"
-                    class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700"
-                    title="Ngày nhận phòng">
-            </div>
-            <div class="w-full relative">
-                <i class="fa-regular fa-calendar-xmark absolute left-4 top-1/2 -translate-y-1/2 text-rose-500"></i>
-                <input type="date" name="check_out" value="<?= htmlspecialchars($search_out) ?>"
-                    min="<?= date('Y-m-d', strtotime('+1 day')) ?>"
-                    class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700"
-                    title="Ngày trả phòng">
-            </div>
-            <div class="w-full relative">
-                <i class="fa-solid fa-users absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="number" name="guests" min="1" placeholder="Số người ở (Tùy chọn)"
-                    value="<?= $search_guests ? htmlspecialchars($search_guests) : '' ?>"
-                    class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700">
-            </div>
-            <button type="submit"
-                class="w-full bg-indigo-600 text-white px-8 py-3.5 rounded-xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition active:scale-95 whitespace-nowrap">
-                Tìm kiếm phòng
-            </button>
+    <div class="relative w-full h-0 z-30 flex justify-center">
+        <div class="absolute top-0 -translate-y-1/2 w-full max-w-4xl px-4">
 
-            <!-- Dòng Chọn Dịch vụ/Tiện ích (MongoDB filter) -->
-            <div class="md:col-span-4 border-t border-slate-100 pt-3 flex flex-wrap gap-4 items-center">
-                <span class="text-sm font-bold text-slate-600"><i class="fa-solid fa-sparkles text-amber-500 mr-1"></i>
-                    Tiện ích nổi bật:</span>
-                <?php
-                foreach ($all_amenities as $amn):
-                    $checked = in_array($amn, $search_amenities) ? 'checked' : '';
-                ?>
-                <label class="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-2 py-1 rounded-lg transition">
-                    <input type="checkbox" name="amenities[]" value="<?= $amn ?>" <?= $checked ?>
-                        class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer">
-                    <span class="text-sm text-slate-700 font-medium"><?= $amn ?></span>
-                </label>
-                <?php endforeach; ?>
-            </div>
-        </form>
+            <form id="searchBar" action="#rooms" method="GET"
+                class="bg-white p-4 rounded-2xl shadow-xl grid grid-cols-1 md:grid-cols-4 gap-4 border border-slate-100">
+                <div class="w-full relative">
+                    <i
+                        class="fa-regular fa-calendar-check absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500 z-10"></i>
+                    <input type="text" id="checkInDate" name="check_in" value="<?= htmlspecialchars($search_in) ?>"
+                        placeholder="Ngày nhận phòng"
+                        class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700 bg-white">
+                </div>
+                <div class="w-full relative">
+                    <i
+                        class="fa-regular fa-calendar-xmark absolute left-4 top-1/2 -translate-y-1/2 text-rose-500 z-10"></i>
+                    <input type="text" id="checkOutDate" name="check_out" value="<?= htmlspecialchars($search_out) ?>"
+                        placeholder="Ngày trả phòng"
+                        class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700 bg-white">
+                </div>
+                <div class="w-full relative">
+                    <i class="fa-solid fa-users absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="number" name="guests" min="1" placeholder="Số người ở (Tùy chọn)"
+                        value="<?= $search_guests ? htmlspecialchars($search_guests) : '' ?>"
+                        class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700">
+                </div>
+                <button type="submit"
+                    class="w-full bg-indigo-600 text-white px-8 py-3.5 rounded-xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition active:scale-95 whitespace-nowrap relative overflow-hidden group">
+                    Tìm kiếm phòng
+                    <span
+                        class="absolute top-0 left-[-100%] w-[50%] h-full bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-20deg] group-hover:animate-[shine_1s_ease-in-out]"></span>
+                </button>
+
+                <!-- Chọn tiện ích -->
+                <div class="md:col-span-4 border-t border-slate-100 pt-5 flex flex-wrap gap-3 items-center">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-widest mr-2">
+                        <i class="fa-solid fa-sparkles text-amber-500 mr-1"></i> Tiện ích nổi bật:
+                    </span>
+                    <?php
+                    foreach ($all_amenities as $amn):
+                        $checked = in_array($amn, $search_amenities) ? 'checked' : '';
+                    ?>
+                    <label class="relative cursor-pointer group">
+                        <input type="checkbox" name="amenities[]" value="<?= $amn ?>" <?= $checked ?>
+                            class="peer sr-only">
+                        <span
+                            class="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-full text-xs font-bold transition-all duration-300 hover:border-indigo-300 peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:border-indigo-600 peer-checked:shadow-md peer-checked:shadow-indigo-200 flex items-center gap-1.5">
+                            <?= $amn ?>
+                        </span>
+                    </label>
+                    <?php endforeach; ?>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- Danh sách Hạng phòng (Room Types) -->
-    <div class="max-w-7xl mx-auto px-6 py-24" id="rooms">
-        <div class="text-center mb-16">
-            <?php if ($is_searched): ?>
-            <h2 class="text-4xl font-black text-slate-800 tracking-tight">Phòng trống cho bạn</h2>
-            <p class="text-indigo-600 mt-4 font-bold bg-indigo-50 inline-block px-4 py-1.5 rounded-full">
-                <i class="fa-solid fa-check mr-1"></i> Có <?= count($room_types) ?> hạng phòng phù hợp với yêu cầu của
-                bạn
-            </p>
+    <div id="rooms" class="relative w-full pt-40 pb-24 bg-slate-900 overflow-hidden">
+
+        <div
+            class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1578683010236-d716f9a3f461?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center bg-fixed opacity-30">
+        </div>
+        <div class="absolute inset-0 bg-gradient-to-b from-slate-900 via-slate-900/80 to-slate-900 z-0"></div>
+
+        <div
+            class="absolute top-0 left-0 w-32 h-32 border-t-2 border-l-2 border-amber-500/40 m-6 lg:m-12 z-0 pointer-events-none">
+        </div>
+        <div
+            class="absolute bottom-0 right-0 w-32 h-32 border-b-2 border-r-2 border-amber-500/40 m-6 lg:m-12 z-0 pointer-events-none">
+        </div>
+
+        <div class="relative z-10 max-w-7xl mx-auto px-6">
+
+            <div class="text-center mb-16">
+                <?php if ($is_searched): ?>
+                <h2 class="text-5xl md:text-6xl font-viaoda text-white tracking-wide c">Phòng trống cho bạn
+                </h2>
+                <p
+                    class="text-indigo-300 mt-4 font-bold bg-indigo-900/40 border border-indigo-500/30 inline-block px-4 py-1.5 rounded-full backdrop-blur-sm shadow-lg">
+                    <i class="fa-solid fa-check mr-1"></i> Có <?= count($room_types) ?> hạng phòng phù hợp với yêu cầu
+                    của bạn
+                </p>
+                <?php else: ?>
+                <h2 class="text-5xl md:text-6xl font-viaoda text-white tracking-wide drop-shadow-md">Lựa chọn của bạn
+                </h2>
+                <p class="text-slate-400 mt-4 font-medium font-sans">Các hạng phòng được thiết kế chuyên biệt để mang
+                    lại sự thoải mái tối đa.</p>
+                <?php endif; ?>
+            </div>
+
+            <?php if (empty($room_types)): ?>
+            <div
+                class="text-center bg-slate-800/80 backdrop-blur-md p-12 rounded-3xl border border-slate-700 shadow-2xl max-w-2xl mx-auto">
+                <i class="fa-solid fa-bed-pulse text-6xl text-slate-500 mb-4"></i>
+                <h3 class="text-xl font-bold text-white">Rất tiếc, đã hết phòng!</h3>
+                <p class="text-slate-400 mt-2">Không có hạng phòng nào trống hoặc đủ sức chứa cho ngày bạn chọn. Vui
+                    lòng thay đổi thông tin tìm kiếm.</p>
+            </div>
             <?php else: ?>
-            <h2 class="text-4xl font-black text-slate-800 tracking-tight">Lựa chọn của bạn</h2>
-            <p class="text-slate-500 mt-4 font-medium">Các hạng phòng được thiết kế chuyên biệt để mang lại sự thoải mái
-                tối đa.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                <?php foreach ($room_types as $rt): ?>
+                <div
+                    class="bg-white rounded-[2rem] overflow-hidden shadow-2xl shadow-black/50 border border-slate-800 group hover:-translate-y-2 transition-all duration-500 flex flex-col opacity-0 translate-y-10 reveal-card">
+                    <div class="relative h-72 overflow-hidden bg-slate-100">
+                        <div
+                            class="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent z-10 pointer-events-none">
+                        </div>
+
+                        <?php if (isset($mongo_images[$rt['type_id']])): ?>
+                        <img src="data:<?php echo $mongo_images[$rt['type_id']]['mime']; ?>;base64,<?php echo $mongo_images[$rt['type_id']]['base64']; ?>"
+                            class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+                        <?php else: ?>
+                        <div class="flex items-center justify-center h-full text-slate-300"><i
+                                class="fa-solid fa-image text-5xl"></i></div>
+                        <?php endif; ?>
+
+                        <div class="absolute bottom-4 left-4 z-20">
+                            <span
+                                class="bg-white/90 backdrop-blur-sm text-slate-800 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg shadow-sm">
+                                <?= $rt['capacity'] ?> Người lớn
+                            </span>
+                        </div>
+                    </div>
+                    <div class="p-8 flex-1 flex flex-col">
+                        <h3 class="text-2xl font-black text-slate-800 mb-2 uppercase tracking-tight">
+                            <?php echo htmlspecialchars($rt['name']); ?></h3>
+                        <p class="text-slate-500 text-sm line-clamp-3 mb-6 flex-1">
+                            <?php echo htmlspecialchars($rt['description']); ?></p>
+                        <div
+                            class="flex items-center gap-4 text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">
+                            <span><i class="fa-solid fa-user-group text-indigo-400 mr-1.5"></i>Tối đa
+                                <?php echo $rt['capacity']; ?> người</span>
+                        </div>
+
+                        <?php if (isset($mongo_images[$rt['type_id']]) && !empty($mongo_images[$rt['type_id']]['amenities'])): ?>
+                        <div class="flex flex-wrap gap-2 mb-6">
+                            <?php foreach ($mongo_images[$rt['type_id']]['amenities'] as $amn): ?>
+                            <span
+                                class="px-2.5 py-1 bg-slate-50 border border-slate-200 text-slate-600 rounded-lg text-[10px] font-bold"><i
+                                    class="fa-solid fa-check text-emerald-500 mr-1"></i> <?= $amn ?></span>
+                            <?php endforeach; ?>
+                        </div>
+                        <?php endif; ?>
+
+                        <?php if (!$can_book): ?>
+                        <a href="#searchBar"
+                            onclick="document.getElementById('searchBar').classList.add('ring-4', 'ring-indigo-200', 'scale-[1.02]'); setTimeout(()=>document.getElementById('searchBar').classList.remove('ring-4', 'ring-indigo-200', 'scale-[1.02]'), 500);"
+                            class="mt-auto text-center w-full bg-slate-800 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-slate-900 transition active:scale-95">Chọn
+                            ngày để Đặt phòng</a>
+                        <?php else: ?>
+                        <?php
+                                    $total_dynamic_price = $rt['price_per_day'] * $dynamic_multiplier_sum;
+                                    $price_fmt = number_format($total_dynamic_price, 0, ',', '.');
+                                    ?>
+                        <div class="mt-auto pt-6 border-t border-slate-100 flex items-end justify-between">
+                            <div>
+                                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Giá từ
+                                </p>
+                                <p class="text-2xl font-black text-indigo-600 leading-none">
+                                    <?= number_format($total_dynamic_price ?? $rt['price_per_day'], 0, ',', '.') ?><span
+                                        class="text-sm text-slate-400 font-bold">đ</span>
+                                    <?php if (!$can_book): ?><span class="text-xs text-slate-400 font-medium font-sans">
+                                        /
+                                        đêm</span><?php endif; ?>
+                                </p>
+                            </div>
+                            <button
+                                onclick="openBookingModal(<?= $rt['type_id'] ?>, '<?= htmlspecialchars(addslashes($rt['name'])) ?>', <?= $rt['price_per_day'] ?>, <?= $rt['capacity'] ?>)"
+                                class="bg-slate-900 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg shadow-slate-200 hover:bg-indigo-600 transition duration-300 hover:-translate-y-1">
+                                Đặt ngay
+                            </button>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
             <?php endif; ?>
         </div>
-
-        <?php if (empty($room_types)): ?>
-        <div class="text-center bg-white p-12 rounded-3xl border border-slate-100 shadow-sm max-w-2xl mx-auto">
-            <i class="fa-solid fa-bed-pulse text-6xl text-slate-200 mb-4"></i>
-            <h3 class="text-xl font-bold text-slate-700">Rất tiếc, đã hết phòng!</h3>
-            <p class="text-slate-500 mt-2">Không có hạng phòng nào trống hoặc đủ sức chứa cho ngày bạn chọn. Vui lòng
-                thay đổi thông tin tìm kiếm.</p>
-        </div>
-        <?php else: ?>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-            <?php foreach ($room_types as $rt): ?>
-            <div
-                class="bg-white rounded-[2rem] overflow-hidden shadow-lg border border-slate-100 group hover:-translate-y-2 transition-all duration-500 flex flex-col">
-                <div class="relative h-64 overflow-hidden bg-slate-100">
-                    <?php if (isset($mongo_images[$rt['type_id']])): ?>
-                    <img src="data:<?php echo $mongo_images[$rt['type_id']]['mime']; ?>;base64,<?php echo $mongo_images[$rt['type_id']]['base64']; ?>"
-                        class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
-                    <?php else: ?>
-                    <div class="flex items-center justify-center h-full text-slate-300"><i
-                            class="fa-solid fa-image text-5xl"></i></div>
-                    <?php endif; ?>
-                </div>
-                <div class="p-8 flex-1 flex flex-col">
-                    <h3 class="text-2xl font-black text-slate-800 mb-2 uppercase tracking-tight">
-                        <?php echo htmlspecialchars($rt['name']); ?></h3>
-                    <p class="text-slate-500 text-sm line-clamp-3 mb-6 flex-1">
-                        <?php echo htmlspecialchars($rt['description']); ?></p>
-                    <div
-                        class="flex items-center gap-4 text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">
-                        <span><i class="fa-solid fa-user-group text-indigo-400 mr-1.5"></i>Tối đa
-                            <?php echo $rt['capacity']; ?> người</span>
-                    </div>
-
-                    <?php if (isset($mongo_images[$rt['type_id']]) && !empty($mongo_images[$rt['type_id']]['amenities'])): ?>
-                    <div class="flex flex-wrap gap-2 mb-6">
-                        <?php foreach ($mongo_images[$rt['type_id']]['amenities'] as $amn): ?>
-                        <span
-                            class="px-2.5 py-1 bg-slate-50 border border-slate-200 text-slate-600 rounded-lg text-[10px] font-bold"><i
-                                class="fa-solid fa-check text-emerald-500 mr-1"></i> <?= $amn ?></span>
-                        <?php endforeach; ?>
-                    </div>
-                    <?php endif; ?>
-
-                    <?php if (!$can_book): ?>
-                    <a href="#searchBar"
-                        onclick="document.getElementById('searchBar').classList.add('ring-4', 'ring-indigo-200', 'scale-[1.02]'); setTimeout(()=>document.getElementById('searchBar').classList.remove('ring-4', 'ring-indigo-200', 'scale-[1.02]'), 500);"
-                        class="mt-auto text-center w-full bg-slate-800 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-slate-900 transition active:scale-95">Chọn
-                        ngày để Đặt phòng</a>
-                    <?php else: ?>
-                    <?php
-                                $total_dynamic_price = $rt['price_per_day'] * $dynamic_multiplier_sum;
-                                $price_fmt = number_format($total_dynamic_price, 0, ',', '.');
-                                ?>
-                    <button
-                        onclick="openBookingModal(<?= $rt['type_id'] ?>, '<?= htmlspecialchars(addslashes($rt['name'])) ?>', <?= $rt['price_per_day'] ?>, <?= $rt['capacity'] ?>)"
-                        class="mt-auto w-full bg-indigo-600 text-white py-4 rounded-xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition active:scale-95">Đặt
-                        ngay • <?= $price_fmt ?>đ / <?= $duration_days ?> đêm</button>
-                    <?php endif; ?>
-                </div>
-            </div>
-            <?php endforeach; ?>
-        </div>
-        <?php endif; ?>
     </div>
 
     <!-- Review section -->
@@ -308,6 +414,10 @@ $all_amenities = amenity_get_all();
     ?>
 
     <script src="../assets/js/toast.js"></script>
+    <script src="../assets/js/customer_index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
+
     <script>
     // Lấy cấu hình giá từ Backend
     const pricingConfig = <?php echo json_encode($pricing_config); ?>;
