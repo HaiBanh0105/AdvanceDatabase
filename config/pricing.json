@@ -1,6 +1,7 @@
 {
     "weekend_multiplier": 1.2,
     "holiday_multiplier": 1.5,
+    "deposit_percent": 10,
     "holidays": [
         "01-01",
         "30-04",

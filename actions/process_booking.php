@@ -63,7 +63,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         $booking = db_query_one("SELECT booking_status FROM Booking WHERE booking_id = ? AND customer_id = ?", $booking_id, $customer_id);
         if ($booking && in_array(strtolower($booking['booking_status']), ['pending', 'confirmed'])) {
+            $current_status = strtolower($booking['booking_status']);
             if (booking_update_status($booking_id, 'cancelled')) {
+                $meta = booking_get_meta($booking_id);
+                if ($meta) {
+                    $penalty_amount = $meta['deposit_amount'] / 2; // Phạt 50% tiền cọc
+
+                    if ($current_status === 'confirmed' || $current_status === 'checked-in') {
+                        // Đơn đã duyệt (đã bị trừ 100% cọc) -> Hoàn lại 50% (giữ 50% làm phạt)
+                        if (!empty($meta['is_deducted'])) {
+                            $refund_amount = $meta['deposit_amount'] - $penalty_amount;
+                            db_execute("UPDATE Account SET balance = balance + ? WHERE customer_id = ?", $refund_amount, $customer_id);
+                            
+                            // Ghi nhận phí phạt vào tổng tiền để tính doanh thu cho Admin
+                            db_execute("UPDATE Booking SET total_price = ? WHERE booking_id = ?", $penalty_amount, $booking_id);
+                        }
+                    } elseif ($current_status === 'pending') {
+                        // Đơn chưa duyệt (chưa bị trừ cọc) -> Không phạt tiền khách hàng, cho phép hủy miễn phí
+                        db_execute("UPDATE Booking SET total_price = 0 WHERE booking_id = ?", $booking_id);
+                    }
+                }
                 echo json_encode(['status' => 'success', 'message' => 'Hủy đặt phòng thành công!']);
             } else {
                 echo json_encode(['status' => 'error', 'message' => 'Lỗi hệ thống khi cập nhật trạng thái!']);
@@ -151,6 +170,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
         }
 
+        // TÍNH TOÁN VÀ KIỂM TRA SỐ DƯ ĐỂ ĐẶT CỌC
+        $deposit_percent = $pricing_config['deposit_percent'] ?? 30;
+        $deposit_amount = $total_price * ($deposit_percent / 100);
+
+        $account_balance = db_query_value("SELECT balance FROM Account WHERE account_id = ?", $user_id);
+        if ($account_balance < $deposit_amount) {
+            throw new Exception("Số dư ví không đủ để thanh toán tiền cọc " . number_format($deposit_amount, 0, ',', '.') . "đ (" . $deposit_percent . "%). Vui lòng nạp thêm tiền vào ví!");
+        }
+
         $booking_id = booking_create_customer(
             $customer_id,
             $check_in,
@@ -166,6 +194,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             throw new Exception("Không thể lưu đơn đặt phòng vào cơ sở dữ liệu.");
         }
 
+        // LƯU LẠI LỊCH SỬ TIỀN CỌC ĐỂ SAU NÀY ADMIN DUYỆT SẼ TRỪ
+        booking_save_meta($booking_id, $deposit_amount);
+
         $conn->commit();
 
         // Trừ số lượng mã khuyến mãi bên MongoDB sau khi giao dịch SQL thành công
@@ -177,7 +208,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $conn->rollBack();
         }
         error_log('process_booking error: ' . $e->getMessage());
-        echo json_encode(['status' => 'error', 'message' => 'Chi tiết lỗi: ' . $e->getMessage()]);
+        echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
         exit();
     }
 

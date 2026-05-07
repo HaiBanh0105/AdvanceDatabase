@@ -10,14 +10,14 @@ $search_cccd = trim($_GET['search_cccd'] ?? '');
 
 // Lấy danh sách khách hàng
 if ($search_cccd !== '') {
-    $sql = "SELECT c.customer_id, a.account_id, a.email, c.phone, c.full_name, c.cccd as ID_number, a.status as account_status, c.address, c.created_at
+    $sql = "SELECT c.customer_id, a.account_id, a.email, c.phone, c.full_name, c.cccd as ID_number, a.status as account_status, c.address, c.created_at, a.balance
             FROM Customer c 
             LEFT JOIN Account a ON c.customer_id = a.customer_id 
             WHERE c.cccd LIKE ?
             ORDER BY c.customer_id DESC";
     $customers = db_query($sql, '%' . $search_cccd . '%');
 } else {
-    $sql = "SELECT c.customer_id, a.account_id, a.email, c.phone, c.full_name, c.cccd as ID_number, a.status as account_status, c.address, c.created_at
+    $sql = "SELECT c.customer_id, a.account_id, a.email, c.phone, c.full_name, c.cccd as ID_number, a.status as account_status, c.address, c.created_at, a.balance
             FROM Customer c 
             LEFT JOIN Account a ON c.customer_id = a.customer_id 
             ORDER BY c.customer_id DESC";
@@ -98,7 +98,7 @@ if ($search_cccd !== '') {
                                     <?php echo htmlspecialchars($c['ID_number'] ?: 'Trống'); ?></p>
                             </td>
                             <td class="px-6 py-4 font-bold text-indigo-600">
-                                <?php echo !empty($c['account_id']) ? '0 đ' : '<span class="text-slate-300"></span>'; ?>
+                                <?php echo !empty($c['account_id']) ? number_format($c['balance'] ?? 0, 0, ',', '.') . ' đ' : '<span class="text-slate-300"></span>'; ?>
                             </td>
                             <td class="px-6 py-4 text-slate-500">
                                 <span class="text-xs font-medium">

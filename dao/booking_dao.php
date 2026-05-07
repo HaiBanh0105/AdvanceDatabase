@@ -1,5 +1,6 @@
 <?php
 require_once('DAO.php');
+require_once('../config/mongodb.php');
 
 const VALID_BOOKING_STATUSES = ['pending', 'confirmed', 'checked_in', 'completed', 'cancelled'];
 
@@ -10,7 +11,8 @@ function get_pricing_config()
         $default = [
             'weekend_multiplier' => 1.2,
             'holiday_multiplier' => 1.5,
-            'holidays' => ['01-01', '30-04', '01-05', '02-09', '31-12']
+            'holidays' => ['01-01', '30-04', '01-05', '02-09', '31-12'],
+            'deposit_percent' => 30
         ];
         file_put_contents($config_file, json_encode($default, JSON_PRETTY_PRINT));
         return $default;
@@ -52,7 +54,7 @@ function booking_create_customer($customer_id, $check_in, $check_out, $total_pri
         }
 
         $sql1 = "INSERT INTO Booking (customer_id, check_in_planned, check_out_planned, total_price, payment_status, booking_status)
-                 VALUES (?, ?, ?, ?, 'unpaid', 'pending')";
+                 VALUES (?, ?, ?, ?, 'partially_paid', 'pending')";
         $conn->prepare($sql1)->execute([$customer_id, $check_in, $check_out, $total_price]);
         $booking_id = $conn->lastInsertId();
 
@@ -254,7 +256,7 @@ function booking_get_guest_by_cccd($cccd)
 
 function booking_get_details_for_checkout($booking_id)
 {
-    $sql = "SELECT b.booking_id, b.check_in_planned as check_in, b.check_out_planned as check_out, b.booking_status as status, b.total_price, bd.price_at_booking, bd.actual_check_out, r.room_number, rt.price_per_hour, rt.price_per_day
+    $sql = "SELECT b.booking_id, b.check_in_planned as check_in, b.check_out_planned as check_out, b.booking_status as status, b.payment_status, b.total_price, bd.price_at_booking, bd.actual_check_out, r.room_number, rt.price_per_hour, rt.price_per_day
             FROM Booking b
             JOIN Booking_detail bd ON b.booking_id = bd.booking_id
             JOIN Room r ON bd.room_id = r.room_id
@@ -326,4 +328,27 @@ function booking_check_phone_exists($phone)
     $sql2 = "SELECT COUNT(*) FROM Customer WHERE phone = ?";
     if (db_query_value($sql2, $phone) > 0) return true;
     return false;
+}
+
+// --- MONGODB: QUẢN LÝ TIỀN ĐẶT CỌC CỦA ĐƠN HÀNG ---
+function booking_save_meta($booking_id, $deposit_amount)
+{
+    $db = mongo_get_db();
+    $db->booking_meta->insertOne([
+        'booking_id' => (int)$booking_id,
+        'deposit_amount' => (float)$deposit_amount,
+        'is_deducted' => false
+    ]);
+}
+
+function booking_get_meta($booking_id)
+{
+    $db = mongo_get_db();
+    return $db->booking_meta->findOne(['booking_id' => (int)$booking_id]);
+}
+
+function booking_mark_deducted($booking_id)
+{
+    $db = mongo_get_db();
+    $db->booking_meta->updateOne(['booking_id' => (int)$booking_id], ['$set' => ['is_deducted' => true]]);
 }

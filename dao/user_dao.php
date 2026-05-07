@@ -38,8 +38,12 @@ function user_approve_customer($user_id)
 
 function user_deposit_balance($user_id, $amount)
 {
-    // Lưu ý: Bảng Customer/Account mới không còn cột balance. Giữ hàm này trống hoặc tạo bảng Wallet riêng.
-    return true;
+    return db_execute("UPDATE Account SET balance = ISNULL(balance, 0) + ? WHERE account_id = ?", $amount, $user_id);
+}
+
+function user_get_balance($user_id)
+{
+    return db_query_value("SELECT balance FROM Account WHERE account_id = ?", $user_id) ?: 0;
 }
 
 function user_update_profile($user_id, $phone, $full_name, $dob, $id_number, $nation, $address)

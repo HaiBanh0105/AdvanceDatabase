@@ -37,8 +37,14 @@
                         <span class="font-bold text-slate-800" id="inv_out"></span>
                     </div>
                     <div class="flex justify-between items-center border-b border-dashed border-slate-200 pb-2">
-                        <span class="text-slate-500" id="inv_base_price_label">Tiền phòng dự kiến</span>
+                        <span class="text-slate-500" id="inv_base_price_label">Tiền phòng</span>
                         <span class="font-bold text-slate-800" id="inv_base_price"></span>
+                    </div>
+                    <div id="inv_deposit_box"
+                        class="flex justify-between items-center border-b border-dashed border-slate-200 pb-2 bg-emerald-50/50 px-3 pt-2 mt-2 mb-2 rounded-lg">
+                        <span class="text-emerald-700 font-bold"><i class="fa-solid fa-minus-circle mr-1"></i> Trừ tiền
+                            cọc (Đã thanh toán trước)</span>
+                        <span class="font-bold text-emerald-600" id="inv_deposit_amount"></span>
                     </div>
                     <div id="inv_overtime_box"
                         class="hidden flex-col border-b border-dashed border-slate-200 pb-3 pt-1 gap-2">
@@ -92,27 +98,88 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const invOvertimeFee = document.getElementById('inv_overtime_fee');
-        const invOvertimeBox = document.getElementById('inv_overtime_box');
+document.addEventListener('DOMContentLoaded', () => {
+    const invOvertimeFee = document.getElementById('inv_overtime_fee');
+    const invOvertimeBox = document.getElementById('inv_overtime_box');
 
-        if (invOvertimeFee && invOvertimeBox) {
-            const observer = new MutationObserver(() => {
-                const feeText = invOvertimeFee.innerText.trim();
-                // Ẩn cảnh báo đỏ nếu giá trị là trống, 0, hoặc 0đ
-                if (feeText === '' || feeText === '0' || feeText === '0đ') {
-                    invOvertimeBox.classList.add('hidden');
-                    invOvertimeBox.classList.remove('flex');
-                } else {
-                    invOvertimeBox.classList.remove('hidden');
-                    invOvertimeBox.classList.add('flex');
-                }
-            });
-            observer.observe(invOvertimeFee, {
-                childList: true,
-                characterData: true,
-                subtree: true
-            });
-        }
-    });
+    if (invOvertimeFee && invOvertimeBox) {
+        const observer = new MutationObserver(() => {
+            const feeText = invOvertimeFee.innerText.trim();
+            // Ẩn cảnh báo đỏ nếu giá trị là trống, 0, hoặc 0đ
+            if (feeText === '' || feeText === '0' || feeText === '0đ') {
+                invOvertimeBox.classList.add('hidden');
+                invOvertimeBox.classList.remove('flex');
+            } else {
+                invOvertimeBox.classList.remove('hidden');
+                invOvertimeBox.classList.add('flex');
+            }
+        });
+        observer.observe(invOvertimeFee, {
+            childList: true,
+            characterData: true,
+            subtree: true
+        });
+    }
+});
+
+// Ghi đè hàm openInvoiceModal để xử lý hiển thị tiền cọc
+function openInvoiceModal(bookingId) {
+    document.getElementById('invoiceModal').classList.remove('hidden');
+    document.getElementById('invoiceModal').classList.add('flex');
+    document.getElementById('inv_loader').classList.remove('hidden');
+
+    fetch(`../actions/process_admin_booking.php?action=get_invoice&booking_id=${bookingId}`)
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('inv_loader').classList.add('hidden');
+            if (data.error) return alert("Lỗi tải dữ liệu");
+
+            document.getElementById('inv_id').innerText = '#BK-' + String(data.booking_id).padStart(4, '0');
+            document.getElementById('inv_status').innerText = data.status.toUpperCase();
+            document.getElementById('inv_in').innerText = data.check_in;
+            document.getElementById('inv_out').innerText = data.actual_check_out || data.check_out;
+
+            if (data.status === 'cancelled') {
+                document.getElementById('inv_base_price_label').innerText = 'Phí phạt hủy đơn';
+            } else {
+                document.getElementById('inv_base_price_label').innerText = data.is_estimated ?
+                    'Tiền phòng dự kiến' : 'Tiền phòng';
+            }
+
+            document.getElementById('inv_base_price').innerText = new Intl.NumberFormat('vi-VN').format(data
+                .base_price) + 'đ';
+
+            let depositAmount = parseFloat(data.deposit_amount) || 0;
+            document.getElementById('inv_deposit_amount').innerText = '-' + new Intl.NumberFormat('vi-VN').format(
+                depositAmount) + 'đ';
+
+            if (data.overtime_fee > 0) {
+                document.getElementById('inv_overtime_fee').innerText = '+' + new Intl.NumberFormat('vi-VN').format(
+                    data.overtime_fee) + 'đ';
+                document.getElementById('inv_overtime_note').innerText = data.overtime_hours;
+            } else {
+                document.getElementById('inv_overtime_fee').innerText = ''; // This triggers the observer to hide it
+            }
+
+            document.getElementById('inv_payment_status').innerText = data.payment_status === 'paid' ?
+                'Đã Thanh Toán' : 'Chưa Thanh Toán';
+
+            let finalAmount = parseFloat(data.amount_to_pay ?? data.final_total ?? data.total_price ?? 0);
+            if (isNaN(finalAmount)) finalAmount = 0;
+            document.getElementById('inv_total').innerText = new Intl.NumberFormat('vi-VN').format(finalAmount) +
+                'đ';
+
+            let guestsHtml = '';
+            if (data.guests) {
+                data.guests.forEach(g => {
+                    const role = g.is_representative == 1 ?
+                        '<span class="text-[9px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded font-bold border border-indigo-200">ĐẠI DIỆN</span>' :
+                        '<span class="text-[9px] text-slate-400 border border-slate-200 bg-white shadow-sm px-1.5 py-0.5 rounded font-bold">ĐI CÙNG</span>';
+                    guestsHtml +=
+                        `<tr><td class="px-4 py-2 font-bold text-slate-700">${g.full_name}</td><td class="px-4 py-2 text-slate-500">${g.cccd}</td><td class="px-4 py-2 text-center">${role}</td></tr>`;
+                });
+            }
+            document.getElementById('inv_guests').innerHTML = guestsHtml;
+        });
+}
 </script>

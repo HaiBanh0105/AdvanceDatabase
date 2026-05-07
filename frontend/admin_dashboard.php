@@ -7,7 +7,11 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
 require_once '../dao/room_dao.php';
 require_once '../dao/booking_dao.php';
 
-$total_revenue = db_query_value("SELECT SUM(total_price) FROM Booking WHERE booking_status = 'completed'") ?: 0;
+// Doanh thu = Tiền phòng hoàn thành + Tiền phạt hủy đơn
+$room_revenue = db_query_value("SELECT SUM(total_price) FROM Booking WHERE booking_status = 'completed'") ?: 0;
+$penalty_revenue = db_query_value("SELECT SUM(total_price) FROM Booking WHERE booking_status = 'cancelled'") ?: 0;
+$total_revenue = $room_revenue + $penalty_revenue;
+
 $total_bookings = db_query_value("SELECT COUNT(*) FROM Booking") ?: 0;
 $today_bookings = db_query_value("SELECT COUNT(*) FROM Booking WHERE CAST(booking_date AS DATE) = CAST(GETDATE() AS DATE)") ?: 0;
 
@@ -15,7 +19,9 @@ $total_rooms = db_query_value("SELECT COUNT(*) FROM Room") ?: 0;
 $occupied_rooms = db_query_value("SELECT COUNT(*) FROM Room WHERE status = 'occupied'") ?: 0;
 $occupancy_rate = $total_rooms > 0 ? round(($occupied_rooms / $total_rooms) * 100) : 0;
 
-$this_month_revenue = db_query_value("SELECT SUM(total_price) FROM Booking WHERE booking_status = 'completed' AND MONTH(booking_date) = MONTH(GETDATE()) AND YEAR(booking_date) = YEAR(GETDATE())") ?: 0;
+$this_month_room_rev = db_query_value("SELECT SUM(total_price) FROM Booking WHERE booking_status = 'completed' AND MONTH(booking_date) = MONTH(GETDATE()) AND YEAR(booking_date) = YEAR(GETDATE())") ?: 0;
+$this_month_penalty_rev = db_query_value("SELECT SUM(total_price) FROM Booking WHERE booking_status = 'cancelled' AND MONTH(booking_date) = MONTH(GETDATE()) AND YEAR(booking_date) = YEAR(GETDATE())") ?: 0;
+$this_month_revenue = $this_month_room_rev + $this_month_penalty_rev;
 
 $room_types = room_type_get_all('price ASC');
 
@@ -71,8 +77,21 @@ $top_rooms = db_query("SELECT * FROM vw_TopRoomsByRevenue WHERE $rank_column <= 
             <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                 <p class="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Tổng doanh thu</p>
                 <h3 class="text-3xl font-black text-slate-900"><?= number_format($total_revenue, 0, ',', '.') ?>đ</h3>
-                <span class="text-emerald-500 text-xs font-bold">Tháng này:
-                    <?= number_format($this_month_revenue, 0, ',', '.') ?>đ</span>
+
+                <div class="mt-3 flex flex-col gap-1 border-t border-slate-100 pt-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-emerald-500 text-[10px] font-bold uppercase"><i
+                                class="fa-solid fa-bed mr-1"></i> Thuê phòng</span>
+                        <span
+                            class="text-slate-700 text-xs font-bold"><?= number_format($room_revenue, 0, ',', '.') ?>đ</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-rose-500 text-[10px] font-bold uppercase"><i class="fa-solid fa-ban mr-1"></i>
+                            Phí phạt hủy</span>
+                        <span
+                            class="text-slate-700 text-xs font-bold"><?= number_format($penalty_revenue, 0, ',', '.') ?>đ</span>
+                    </div>
+                </div>
             </div>
             <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                 <p class="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Đơn đặt phòng</p>

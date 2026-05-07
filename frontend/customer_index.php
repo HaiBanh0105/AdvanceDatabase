@@ -642,6 +642,12 @@ $all_amenities = amenity_get_all();
         document.getElementById('conf_total_price').innerText = new Intl.NumberFormat('vi-VN').format(baseTotalPrice) +
             'đ';
 
+        // Tính và Hiển thị tiền cọc
+        const depositPercent = pricingConfig.deposit_percent || 30;
+        const depositAmount = baseTotalPrice * (depositPercent / 100);
+        document.getElementById('conf_deposit_percent').innerText = depositPercent;
+        document.getElementById('conf_deposit_amount').innerText = new Intl.NumberFormat('vi-VN').format(depositAmount) + 'đ';
+
         // Reset trạng thái Promo
         document.getElementById('cb_promo_code_hidden').value = '';
         document.getElementById('promo_input').value = '';
@@ -680,6 +686,9 @@ $all_amenities = amenity_get_all();
 
                     const discountAmount = baseTotalPrice * (data.discount / 100);
                     const finalPrice = baseTotalPrice - discountAmount;
+                    
+                    const depositPercent = pricingConfig.deposit_percent || 30;
+                    const depositAmount = finalPrice * (depositPercent / 100);
 
                     document.getElementById('discount_row').classList.remove('hidden');
                     document.getElementById('discount_row').classList.add('flex');
@@ -688,6 +697,7 @@ $all_amenities = amenity_get_all();
                         'vi-VN').format(discountAmount) + 'đ';
                     document.getElementById('conf_total_price').innerText = new Intl.NumberFormat('vi-VN').format(
                         finalPrice) + 'đ';
+                    document.getElementById('conf_deposit_amount').innerText = new Intl.NumberFormat('vi-VN').format(depositAmount) + 'đ';
                 } else {
                     msgLabel.className = 'text-xs font-bold mt-2 text-rose-500';
                     msgLabel.innerHTML = `<i class="fa-solid fa-circle-xmark mr-1"></i> ${data.message}`;
@@ -696,6 +706,10 @@ $all_amenities = amenity_get_all();
                     document.getElementById('discount_row').classList.remove('flex');
                     document.getElementById('conf_total_price').innerText = new Intl.NumberFormat('vi-VN').format(
                         baseTotalPrice) + 'đ';
+                        
+                    const depositPercent = pricingConfig.deposit_percent || 30;
+                    const depositAmount = baseTotalPrice * (depositPercent / 100);
+                    document.getElementById('conf_deposit_amount').innerText = new Intl.NumberFormat('vi-VN').format(depositAmount) + 'đ';
                 }
             })
             .catch(err => {

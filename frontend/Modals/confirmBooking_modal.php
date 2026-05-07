@@ -53,6 +53,18 @@
                 <span class="text-sm font-bold text-indigo-800 uppercase tracking-wider">Tổng tiền</span>
                 <span class="text-2xl font-black text-indigo-600" id="conf_total_price"></span>
             </div>
+
+            <div class="bg-rose-50 p-4 rounded-xl flex justify-between items-center mt-3 border border-rose-100">
+                <div>
+                    <span class="text-sm font-bold text-rose-800 uppercase tracking-wider">Tiền cọc đặt phòng</span>
+                    <p class="text-[10px] text-rose-600 font-medium mt-0.5">(<span id="conf_deposit_percent"></span>%
+                        giá
+                        trị
+                        tiền phòng)
+                    </p>
+                </div>
+                <span class="text-xl font-black text-rose-600" id="conf_deposit_amount"></span>
+            </div>
         </div>
 
         <div class="p-6 pt-0">

@@ -34,6 +34,7 @@ CREATE TABLE Account (
     customer_id INT NULL, 
     email NVARCHAR(100) UNIQUE,
     password NVARCHAR(255) NOT NULL,
+    balance DECIMAL(15, 2) DEFAULT 0,
     status NVARCHAR(50) DEFAULT 'active',
     FOREIGN KEY (customer_id) REFERENCES Customer(customer_id) ON DELETE CASCADE
 );

@@ -11,6 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if ($action === 'update_pricing') {
         $weekend = (float)$_POST['weekend_multiplier'];
         $holiday = (float)$_POST['holiday_multiplier'];
+        $deposit = (float)($_POST['deposit_percent'] ?? 30);
         $holidays_str = trim($_POST['holidays_list']);
 
         $holidays_arr = array_map('trim', explode(',', $holidays_str));
@@ -21,6 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $data = [
             'weekend_multiplier' => $weekend,
             'holiday_multiplier' => $holiday,
+            'deposit_percent' => $deposit,
             'holidays' => array_values($holidays_arr)
         ];
 

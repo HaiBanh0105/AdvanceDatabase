@@ -93,6 +93,22 @@ $pricing_config = get_pricing_config();
                                         ngày thường.
                                     </p>
                                 </div>
+
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Phần trăm đặt cọc bắt buộc (%)</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <i class="fa-solid fa-piggy-bank text-slate-400"></i>
+                                </div>
+                                <input type="number" step="1" name="deposit_percent" min="0" max="100"
+                                    value="<?= htmlspecialchars($pricing_config['deposit_percent'] ?? 30) ?>"
+                                    class="w-full pl-11 pr-4 py-3 bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-semibold text-slate-700"
+                                    required>
+                            </div>
+                            <p class="text-[11px] text-slate-500 mt-2 font-medium">
+                                Khách hàng online bắt buộc phải có số dư trong ví lớn hơn hoặc bằng % này so với tổng giá trị đơn đặt phòng.
+                            </p>
+                        </div>
                             </div>
                         </div>
 

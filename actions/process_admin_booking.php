@@ -14,6 +14,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $booking_id = (int)$_POST['booking_id'];
         $status     = trim($_POST['status']);
 
+        $current_b = db_query_one("SELECT booking_status, customer_id FROM Booking WHERE booking_id = ?", $booking_id);
+
         if ($status === 'checked_in') {
             $sql_check = "SELECT b.check_in_planned, r.status as room_status 
                           FROM Booking b 
@@ -38,6 +40,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         $ok = booking_update_status($booking_id, $status);
         if ($ok) {
+            // XỬ LÝ TRỪ TIỀN CỌC KHI ADMIN DUYỆT ĐƠN (pending -> confirmed/checked_in)
+            if (in_array($status, ['confirmed', 'checked_in', 'checked-in']) && $current_b) {
+                $meta = booking_get_meta($booking_id);
+                if ($meta && empty($meta['is_deducted'])) {
+                    // Trừ tiền cọc từ Account
+                    db_execute("UPDATE Account SET balance = balance - ? WHERE customer_id = ?", $meta['deposit_amount'], $current_b['customer_id']);
+                    booking_mark_deducted($booking_id);
+                }
+            }
+
+            // XỬ LÝ HOÀN TIỀN KHI ADMIN LÀ NGƯỜI TỪ CHỐI/HỦY ĐƠN
+            if ($status === 'cancelled' && $current_b && in_array(strtolower($current_b['booking_status']), ['confirmed', 'checked_in', 'checked-in'])) {
+                $meta = booking_get_meta($booking_id);
+                if ($meta && !empty($meta['is_deducted'])) {
+                    // Hoàn lại đủ 100% do Admin chủ động hủy
+                    db_execute("UPDATE Account SET balance = balance + ? WHERE customer_id = ?", $meta['deposit_amount'], $current_b['customer_id']);
+                }
+            }
+
+            // Cập nhật tổng tiền về 0 nếu đơn bị hủy (Tránh bị tính thành doanh thu ảo)
+            if ($status === 'cancelled') {
+                db_execute("UPDATE Booking SET total_price = 0 WHERE booking_id = ?", $booking_id);
+            }
+
             if ($status === 'checked_in') {
                 db_execute("UPDATE Booking_detail SET actual_check_in = ? WHERE booking_id = ?", date('Y-m-d H:i:s'), $booking_id);
             }
@@ -222,7 +248,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $booking['actual_checkout'] = date('Y-m-d H:i:s', $now);
             $booking['overtime_hours']  = $overtime_hours;
             $booking['overtime_fee']    = $overtime_fee;
-            $booking['final_total']     = (float)($booking['total_price'] ?? 0) + $overtime_fee;
+
+            $meta = booking_get_meta($booking_id);
+            $deposit = ($meta && !empty($meta['is_deducted'])) ? (float)$meta['deposit_amount'] : 0;
+            $booking['deposit_amount']  = $deposit;
+
+            $booking['base_price']      = (float)($booking['total_price'] ?? 0);
+            $booking['final_total']     = $booking['base_price'] + $overtime_fee - $deposit;
 
             // Xóa mọi output rác, chỉ giữ lại đúng nội dung JSON
             ob_end_clean();
@@ -303,6 +335,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $booking    = booking_get_details_for_checkout($booking_id);
 
             if ($booking) {
+                $meta = booking_get_meta($booking_id);
+                $deposit = ($meta && !empty($meta['is_deducted'])) ? (float)$meta['deposit_amount'] : 0;
+                $booking['deposit_amount'] = $deposit;
+
                 if (!in_array($booking['status'], ['completed', 'cancelled'])) {
                     $now      = time();
                     $exp_out  = strtotime($booking['check_out']);
@@ -320,7 +356,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $booking['base_price'] = (float)$booking['total_price'];
                     $booking['overtime_hours'] = $overtime_hours;
                     $booking['overtime_fee'] = $overtime_fee;
-                    $booking['final_total'] = (float)$booking['total_price'] + $overtime_fee;
+                    $booking['amount_to_pay'] = (float)$booking['total_price'] + $overtime_fee - $deposit;
                     $booking['is_estimated'] = true;
                 } else {
                     $overtime_fee = 0;
@@ -339,7 +375,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $booking['base_price'] = (float)$booking['total_price'] - $overtime_fee;
                     $booking['overtime_hours'] = $overtime_hours;
                     $booking['overtime_fee'] = $overtime_fee;
-                    $booking['final_total'] = (float)$booking['total_price'];
+                    $booking['amount_to_pay'] = (float)$booking['total_price'] - $deposit;
                     $booking['is_estimated'] = false;
                 }
             }
