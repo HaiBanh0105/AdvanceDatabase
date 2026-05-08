@@ -46,126 +46,36 @@ function booking_find_available_room($type_id, $check_in, $check_out)
 
 function booking_create_customer($customer_id, $check_in, $check_out, $total_price, $room_id, $price, $rental_type = 'daily', $extra_guests = [])
 {
-    $conn = pdo_get_connection(DB_NAME);
-    $is_nested = $conn->inTransaction();
     try {
-        if (!$is_nested) {
-            $conn->beginTransaction();
-        }
-
-        $sql1 = "INSERT INTO Booking (customer_id, check_in_planned, check_out_planned, total_price, payment_status, booking_status)
-                 VALUES (?, ?, ?, ?, 'partially_paid', 'pending')";
-        $conn->prepare($sql1)->execute([$customer_id, $check_in, $check_out, $total_price]);
-        $booking_id = $conn->lastInsertId();
-
-        $sql2 = "INSERT INTO Booking_detail (booking_id, room_id, price_at_booking) VALUES (?, ?, ?)";
-        $conn->prepare($sql2)->execute([$booking_id, $room_id, $price]);
-        $detail_id = $conn->lastInsertId();
-
-        $sql3 = "INSERT INTO Booking_guests (detail_id, customer_id, is_representative) VALUES (?, ?, 1)";
-        $conn->prepare($sql3)->execute([$detail_id, $customer_id]);
-
-        // Thêm thông tin những khách đi cùng (nếu có)
-        if (!empty($extra_guests)) {
-            $stmt_guest = $conn->prepare("INSERT INTO Booking_guests (detail_id, customer_id, is_representative) VALUES (?, ?, 0)");
-            foreach ($extra_guests as $g) {
-                $g_name = trim($g['name'] ?? '');
-                $g_cccd = trim($g['cccd'] ?? '');
-                if ($g_name === '' || $g_cccd === '') continue;
-
-                $g_id = db_query_value("SELECT customer_id FROM Customer WHERE cccd = ?", $g_cccd);
-                if (!$g_id) {
-                    db_execute("INSERT INTO Customer (full_name, cccd) VALUES (?, ?)", $g_name, $g_cccd);
-                    $g_id = db_query_value("SELECT customer_id FROM Customer WHERE cccd = ?", $g_cccd);
-                }
-                $stmt_guest->execute([$detail_id, $g_id]);
-            }
-        }
-
-        if (!$is_nested) {
-            $conn->commit();
-        }
-        return $booking_id;
+        $json_guests = empty($extra_guests) ? null : json_encode($extra_guests, JSON_UNESCAPED_UNICODE);
+        $sql = "EXEC sp_CreateCustomerBooking @customer_id=?, @check_in=?, @check_out=?, @total_price=?, @room_id=?, @price_at_booking=?, @extra_guests_json=?";
+        $result = db_query_one($sql, $customer_id, $check_in, $check_out, $total_price, $room_id, $price, $json_guests);
+        return $result ? $result['new_booking_id'] : false;
     } catch (Exception $e) {
-        if (!$is_nested && $conn->inTransaction()) {
-            $conn->rollBack();
-        }
         error_log('booking_create_customer error: ' . $e->getMessage());
-        if ($is_nested) throw $e;
-        return false;
+        throw $e;
     }
 }
 
 function booking_create_admin_walkin($employee_id, $room_id, $check_in, $check_out, $base_price, $unit_price, $guests, $rep_index, $guest_phone)
 {
-    $conn = pdo_get_connection(DB_NAME);
     try {
-        $conn->beginTransaction();
-
-        // Kiểm tra và Khóa phòng bi quan (Pessimistic Lock) ngay trong Transaction
-        $sql_lock = "SELECT 1 FROM Room WITH (UPDLOCK, ROWLOCK) WHERE room_id = ?";
-        $conn->prepare($sql_lock)->execute([$room_id]);
-
-        if (!booking_is_room_available($room_id, $check_in, $check_out)) {
-            throw new Exception("ROOM_OCCUPIED");
-        }
-
-        $rep_name = $guests[$rep_index]['name'] ?? 'Khách vãng lai';
         $rep_cccd = trim($guests[$rep_index]['cccd'] ?? '');
-
         if ($rep_cccd === '') {
             throw new Exception("Thiếu thông tin CCCD của người đại diện!");
         }
 
-        // Find or create customer
-        $customer_id = db_query_value("SELECT customer_id FROM Customer WHERE cccd = ?", $rep_cccd);
-        if (!$customer_id) {
-            db_execute("INSERT INTO Customer (full_name, cccd, phone) VALUES (?, ?, ?)", $rep_name, $rep_cccd, $guest_phone);
-            $customer_id = db_query_value("SELECT customer_id FROM Customer WHERE cccd = ?", $rep_cccd);
-        } else {
-            if ($guest_phone !== '') {
-                db_execute("UPDATE Customer SET phone = ? WHERE customer_id = ?", $guest_phone, $customer_id);
-            }
-        }
+        $json_guests = json_encode($guests, JSON_UNESCAPED_UNICODE);
+        $sql = "EXEC sp_CreateWalkinBooking @room_id=?, @check_in=?, @check_out=?, @base_price=?, @unit_price=?, @guest_phone=?, @guests_json=?, @rep_index=?";
+        db_execute($sql, $room_id, $check_in, $check_out, $base_price, $unit_price, $guest_phone, $json_guests, $rep_index);
 
-        $sql1 = "INSERT INTO Booking (customer_id, check_in_planned, check_out_planned, total_price, payment_status, booking_status)
-                 VALUES (?, ?, ?, ?, 'unpaid', 'checked-in')";
-        $conn->prepare($sql1)->execute([$customer_id, $check_in, $check_out, $base_price]);
-        $booking_id = $conn->lastInsertId();
-
-        $sql2 = "INSERT INTO Booking_detail (booking_id, room_id, price_at_booking, actual_check_in)
-                 VALUES (?, ?, ?, ?)";
-        $conn->prepare($sql2)->execute([$booking_id, $room_id, $unit_price, $check_in]);
-        $detail_id = $conn->lastInsertId();
-
-        $sql3 = "INSERT INTO Booking_guests (detail_id, customer_id, is_representative) VALUES (?, ?, ?)";
-        $stmt3 = $conn->prepare($sql3);
-        foreach ($guests as $i => $g) {
-            $name = trim($g['name'] ?? '');
-            $cccd = trim($g['cccd'] ?? '');
-            if ($name === '' || $cccd === '') continue;
-
-            $g_id = db_query_value("SELECT customer_id FROM Customer WHERE cccd = ?", $cccd);
-            if (!$g_id) {
-                db_execute("INSERT INTO Customer (full_name, cccd) VALUES (?, ?)", $name, $cccd);
-                $g_id = db_query_value("SELECT customer_id FROM Customer WHERE cccd = ?", $cccd);
-            }
-            $stmt3->execute([$detail_id, $g_id, ($i == $rep_index) ? 1 : 0]);
-        }
-
-        // Tự động chuyển phòng sang trạng thái có khách
-        db_execute("UPDATE Room SET status = 'occupied' WHERE room_id = ?", $room_id);
-
-        $conn->commit();
         return true;
     } catch (Exception $e) {
-        if ($conn->inTransaction()) {
-            $conn->rollBack();
-        }
-        error_log('booking_create_admin_walkin error: ' . $e->getMessage());
-        if ($e->getMessage() === 'ROOM_OCCUPIED') {
+        // Bắt lỗi 50001 (ROOM_OCCUPIED) do SQL Server THROW ra
+        if (strpos($e->getMessage(), 'ROOM_OCCUPIED') !== false) {
             return 'ROOM_OCCUPIED';
         }
+        error_log('booking_create_admin_walkin error: ' . $e->getMessage());
         return false;
     }
 }
@@ -208,7 +118,7 @@ function booking_get_all_admin($search = '')
 {
     if ($search !== '') {
         $term = "%{$search}%";
-        $sql = "SELECT b.booking_id, bd.detail_id, b.check_in_planned as check_in, b.check_out_planned as check_out, b.booking_status as status, b.total_price, c.full_name as guest_name, c.phone as guest_phone, c.cccd as guest_cccd, r.room_number, rt.name as type_name
+        $sql = "SELECT b.booking_id, bd.detail_id, b.check_in_planned as check_in, b.check_out_planned as check_out, b.booking_status as status, b.total_price, c.full_name as guest_name, ISNULL(c.phone, '') as guest_phone, ISNULL(c.cccd, '') as guest_cccd, r.room_number, rt.name as type_name
                 FROM Booking b
                 JOIN Customer c ON b.customer_id = c.customer_id
                 JOIN Booking_detail bd ON b.booking_id = bd.booking_id
@@ -223,7 +133,7 @@ function booking_get_all_admin($search = '')
                 ORDER BY b.booking_id DESC";
         $bookings = db_query($sql, $term, $term, $term, $term, $term, $term);
     } else {
-        $sql = "SELECT b.booking_id, bd.detail_id, b.check_in_planned as check_in, b.check_out_planned as check_out, b.booking_status as status, b.total_price, c.full_name as guest_name, c.phone as guest_phone, c.cccd as guest_cccd, r.room_number, rt.name as type_name
+        $sql = "SELECT b.booking_id, bd.detail_id, b.check_in_planned as check_in, b.check_out_planned as check_out, b.booking_status as status, b.total_price, c.full_name as guest_name, ISNULL(c.phone, '') as guest_phone, ISNULL(c.cccd, '') as guest_cccd, r.room_number, rt.name as type_name
                 FROM Booking b
                 JOIN Customer c ON b.customer_id = c.customer_id
                 JOIN Booking_detail bd ON b.booking_id = bd.booking_id
@@ -286,7 +196,7 @@ function booking_get_details_for_checkout($booking_id)
     $booking = db_query_one($sql, $booking_id);
     if (!$booking) return false;
 
-    $sql_guests = "SELECT c.full_name, c.cccd, c.phone, bg.is_representative 
+    $sql_guests = "SELECT c.full_name, ISNULL(c.cccd, '') as cccd, ISNULL(c.phone, '') as phone, bg.is_representative 
                    FROM Booking_guests bg JOIN Booking_detail d ON bg.detail_id = d.detail_id JOIN Customer c ON bg.customer_id = c.customer_id WHERE d.booking_id = ?";
     $booking['guests'] = db_query($sql_guests, $booking_id);
 
@@ -307,29 +217,11 @@ function booking_get_details_for_checkout($booking_id)
 
 function booking_process_checkout($booking_id, $actual_checkout)
 {
-    $booking = booking_get_details_for_checkout($booking_id);
-    if (!$booking) return false;
+    // Mọi logic tính tiền quá hạn và cập nhật hóa đơn đã được chuyển xuống Database gánh vác
+    $sql = "EXEC sp_ProcessCheckout @booking_id = ?, @actual_checkout = ?";
+    $result = db_query_one($sql, $booking_id, $actual_checkout);
 
-    $now    = strtotime($actual_checkout);
-    $exp_out = strtotime($booking['check_out']); // Đã alias từ check_out_planned
-    $overtime_fee = 0;
-
-    if ($now > $exp_out) {
-        $overtime_hours = ceil(($now - $exp_out) / 3600);
-
-        $overtime_fee = $overtime_hours * $booking['price_per_hour'];
-        if ($overtime_fee > $booking['price_per_day']) {
-            $overtime_fee = $booking['price_per_day'];
-        }
-    }
-
-    $final_total = $booking['total_price'] + $overtime_fee;
-
-    // Gọi Stored Procedure xử lý giao dịch Checkout (Đã bao gồm Trigger đổi trạng thái phòng tự động)
-    $sql = "EXEC sp_ProcessCheckout @booking_id = ?, @actual_checkout = ?, @final_total = ?";
-    db_execute($sql, $booking_id, $actual_checkout, $final_total);
-
-    return $final_total;
+    return $result ? $result['final_total'] : false;
 }
 
 function booking_is_room_available($room_id, $check_in, $check_out)

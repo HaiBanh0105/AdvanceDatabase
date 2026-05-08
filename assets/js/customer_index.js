@@ -183,13 +183,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Hàm bật/tắt cửa sổ Chat (Gắn vào window để HTML có thể gọi)
     window.toggleChat = function() {
-        let prevBubbleLeft = 0, prevBubbleTop = 0;
-        if (chatBubble) {
-            const rect = chatBubble.getBoundingClientRect();
-            prevBubbleLeft = rect.left;
-            prevBubbleTop = rect.top;
-        }
-
         chatWindow.classList.toggle('hidden');
         chatWindow.classList.toggle('flex');
         if (!chatWindow.classList.contains('hidden')) {
@@ -206,35 +199,6 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => chatInput.focus(), 100);
         } else {
             clearInterval(chatInterval); // Dừng làm mới liên tục để tiết kiệm tài nguyên
-        }
-
-        // Khắc phục lỗi Widget bị văng ra khỏi màn hình khi ở sát góc
-        if (chatWidget && (chatWidget.style.left || chatWidget.style.top)) {
-            requestAnimationFrame(() => {
-                const widgetWidth = chatWidget.offsetWidth;
-                const widgetHeight = chatWidget.offsetHeight;
-                const bubbleWidth = chatBubble.offsetWidth;
-                const bubbleHeight = chatBubble.offsetHeight;
-
-                // 1. Tính toán để giữ Bong bóng Chat đứng yên tại chỗ
-                let idealLeft = prevBubbleLeft - widgetWidth + bubbleWidth;
-                let idealTop = prevBubbleTop - widgetHeight + bubbleHeight;
-
-                // 2. Giới hạn để toàn bộ khung Chat không lọt ra ngoài mép màn hình (Cách lề 20px)
-                const padding = 20;
-                let newLeft = Math.max(padding, Math.min(idealLeft, window.innerWidth - widgetWidth - padding));
-                let newTop = Math.max(padding, Math.min(idealTop, window.innerHeight - widgetHeight - padding));
-
-                // 3. Kích hoạt chuyển động trượt mượt mà nếu nó bị đẩy vào trong màn hình
-                chatWidget.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
-                chatWidget.style.left = newLeft + 'px';
-                chatWidget.style.top = newTop + 'px';
-
-                // Xóa transition sau 300ms để thao tác kéo thả sau đó không bị delay
-                setTimeout(() => {
-                    chatWidget.style.transition = '';
-                }, 300);
-            });
         }
     };
 
@@ -321,75 +285,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Tải tin nhắn lần đầu khi tải trang
     loadMessages();
 
-    // --- DRAG AND DROP CHAT WIDGET ---
-    let isDragging = false;
-    let didMove = false;
-    let startX, startY, initialLeft, initialTop;
-
-    if (chatBubble && chatWidget) {
-        // Hỗ trợ chuột máy tính
-        chatBubble.addEventListener('mousedown', dragStart);
-        document.addEventListener('mousemove', drag);
-        document.addEventListener('mouseup', dragEnd);
-
-        // Hỗ trợ cảm ứng trên điện thoại
-        chatBubble.addEventListener('touchstart', dragStart, {passive: false});
-        document.addEventListener('touchmove', drag, {passive: false});
-        document.addEventListener('touchend', dragEnd);
-
-        // Phân biệt giữa "Kéo" và "Click"
+    // --- CLICK EVENT CHO CHAT WIDGET ---
+    if (chatBubble) {
         chatBubble.addEventListener('click', (e) => {
-            if (didMove) {
-                e.preventDefault(); // Nếu vừa kéo xong thì không mở chat
-                e.stopPropagation();
-            } else {
-                window.toggleChat(); // Nếu chỉ click nhẹ thì mở chat
-            }
+            window.toggleChat();
         });
-    }
-
-    function dragStart(e) {
-        if (e.type === 'mousedown') e.preventDefault(); // Ngăn bôi đen text khi kéo
-        isDragging = true;
-        didMove = false;
-        chatWidget.style.transition = ''; // Xóa hiệu ứng trượt nếu đang có để kéo tay không bị lag
-        
-        startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
-        startY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
-        
-        const rect = chatWidget.getBoundingClientRect();
-        initialLeft = rect.left;
-        initialTop = rect.top;
-        
-        // Vô hiệu hóa bottom/right để dùng absolute left/top (cho phép widget di chuyển tự do)
-        chatWidget.style.bottom = 'auto';
-        chatWidget.style.right = 'auto';
-        chatWidget.style.left = initialLeft + 'px';
-        chatWidget.style.top = initialTop + 'px';
-    }
-
-    function drag(e) {
-        if (!isDragging) return;
-        if (e.type === 'touchmove') e.preventDefault(); // Ngăn cuộn trang điện thoại khi đang kéo
-        
-        const currentX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
-        const currentY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
-        
-        const dx = currentX - startX;
-        const dy = currentY - startY;
-        
-        // Khác biệt quá 3px mới tính là đang kéo (Tránh lỗi tay run khi click)
-        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) didMove = true;
-        
-        // Tính toán vị trí mới và giới hạn không cho kéo văng ra ngoài màn hình
-        let newX = Math.max(0, Math.min(initialLeft + dx, window.innerWidth - chatWidget.offsetWidth));
-        let newY = Math.max(0, Math.min(initialTop + dy, window.innerHeight - chatWidget.offsetHeight));
-        
-        chatWidget.style.left = newX + 'px';
-        chatWidget.style.top = newY + 'px';
-    }
-
-    function dragEnd() {
-        isDragging = false;
     }
 });

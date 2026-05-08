@@ -116,7 +116,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $check_in  = date('Y-m-d 14:00:00', strtotime($_POST['check_in']));
     $check_out = date('Y-m-d 12:00:00', strtotime($_POST['check_out']));
 
-    $extra_guests = $_POST['guests'] ?? [];
+    $extra_guests_raw = $_POST['guests'] ?? [];
+    $extra_guests = [];
+    if (is_array($extra_guests_raw)) {
+        // Làm phẳng mảng (Chuyển Associative Array thành Sequential Array) để SQL Server parse JSON đúng
+        foreach ($extra_guests_raw as $g) {
+            if (trim($g['name'] ?? '') !== '' && trim($g['cccd'] ?? '') !== '') {
+                $extra_guests[] = $g;
+            }
+        }
+    }
     $promo_code = trim($_POST['promo_code'] ?? '');
 
     // Validate thời gian cơ bản

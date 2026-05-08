@@ -122,52 +122,78 @@ CREATE TABLE Booking_guests (
 GO
 
 -- TRIGGER
-CREATE TRIGGER trg_SyncRoomStatus
+ALTER TRIGGER trg_SyncRoomStatus
 ON Booking
-AFTER UPDATE
+AFTER INSERT, UPDATE
 AS
 BEGIN
     SET NOCOUNT ON;
-    -- Chỉ chạy Trigger khi có sự thay đổi trên cột booking_status
-    IF UPDATE(booking_status)
-    BEGIN
-        -- Đổi sang 'occupied' khi Khách Online đến Check-in
-        UPDATE r SET r.status = 'occupied'
-        FROM Room r
-        JOIN Booking_detail bd ON r.room_id = bd.room_id
-        JOIN inserted i ON bd.booking_id = i.booking_id
-        JOIN deleted d ON bd.booking_id = d.booking_id
-        WHERE i.booking_status = 'checked-in' AND d.booking_status <> 'checked-in';
+    
+    -- Đổi sang 'occupied' khi có đơn mới checked-in HOẶC cập nhật thành checked-in
+    UPDATE r SET r.status = 'occupied'
+    FROM Room r
+    JOIN Booking_detail bd ON r.room_id = bd.room_id
+    JOIN inserted i ON bd.booking_id = i.booking_id
+    LEFT JOIN deleted d ON i.booking_id = d.booking_id
+    WHERE i.booking_status = 'checked-in' AND (d.booking_status IS NULL OR d.booking_status <> 'checked-in');
 
-        -- Đổi sang 'available' khi Hủy đơn (cancelled)
-        UPDATE r SET r.status = 'available'
-        FROM Room r
-        JOIN Booking_detail bd ON r.room_id = bd.room_id
-        JOIN inserted i ON bd.booking_id = i.booking_id
-        JOIN deleted d ON bd.booking_id = d.booking_id
-        WHERE i.booking_status = 'cancelled' AND d.booking_status <> 'cancelled';
+    -- Đổi sang 'available' khi Hủy đơn (cancelled)
+    UPDATE r SET r.status = 'available'
+    FROM Room r
+    JOIN Booking_detail bd ON r.room_id = bd.room_id
+    JOIN inserted i ON bd.booking_id = i.booking_id
+    LEFT JOIN deleted d ON i.booking_id = d.booking_id
+    WHERE i.booking_status = 'cancelled' AND (d.booking_status IS NULL OR d.booking_status <> 'cancelled');
 
-        -- Đổi sang 'cleaning' khi Trả phòng (completed)
-        UPDATE r SET r.status = 'cleaning'
-        FROM Room r
-        JOIN Booking_detail bd ON r.room_id = bd.room_id
-        JOIN inserted i ON bd.booking_id = i.booking_id
-        JOIN deleted d ON bd.booking_id = d.booking_id
-        WHERE i.booking_status = 'completed' AND d.booking_status <> 'completed';
-    END
+    -- Đổi sang 'cleaning' khi Trả phòng (completed)
+    UPDATE r SET r.status = 'cleaning'
+    FROM Room r
+    JOIN Booking_detail bd ON r.room_id = bd.room_id
+    JOIN inserted i ON bd.booking_id = i.booking_id
+    LEFT JOIN deleted d ON i.booking_id = d.booking_id
+    WHERE i.booking_status = 'completed' AND (d.booking_status IS NULL OR d.booking_status <> 'completed');
 END;
 GO
 
 -- PROCEDURE
 CREATE PROCEDURE sp_ProcessCheckout
     @booking_id INT,
-    @actual_checkout DATETIME,
-    @final_total DECIMAL(15,2)
+    @actual_checkout DATETIME
 AS
 BEGIN
     SET NOCOUNT ON;
     BEGIN TRY
         BEGIN TRANSACTION;
+
+        DECLARE @exp_out DATETIME;
+        DECLARE @total_price DECIMAL(15,2);
+        DECLARE @price_per_hour DECIMAL(15,2);
+        DECLARE @price_per_day DECIMAL(15,2);
+        DECLARE @overtime_fee DECIMAL(15,2) = 0;
+
+        -- Lấy thông tin phòng và thời gian trả phòng dự kiến
+        SELECT 
+            @exp_out = b.check_out_planned,
+            @total_price = b.total_price,
+            @price_per_hour = rt.price_per_hour,
+            @price_per_day = rt.price_per_day
+        FROM Booking b
+        JOIN Booking_detail bd ON b.booking_id = bd.booking_id
+        JOIN Room r ON bd.room_id = r.room_id
+        JOIN Room_types rt ON r.type_id = rt.type_id
+        WHERE b.booking_id = @booking_id;
+
+        -- Tính phụ phí quá giờ (Nếu có)
+        IF @actual_checkout > @exp_out
+        BEGIN
+            DECLARE @overtime_hours INT = CEILING(CAST(DATEDIFF(MINUTE, @exp_out, @actual_checkout) AS FLOAT) / 60.0);
+            SET @overtime_fee = @overtime_hours * @price_per_hour;
+            IF @overtime_fee > @price_per_day
+                SET @overtime_fee = @price_per_day;
+        END
+
+        DECLARE @final_total DECIMAL(15,2) = @total_price + @overtime_fee;
+
         -- Cập nhật hóa đơn chính
         UPDATE Booking SET booking_status = 'completed', total_price = @final_total, payment_status = 'paid' 
         WHERE booking_id = @booking_id;
@@ -178,6 +204,9 @@ BEGIN
 
         -- Không cần cập nhật Room vì Trigger trg_SyncRoomStatus ở trên sẽ tự động được kích hoạt
         COMMIT TRANSACTION;
+        
+        -- Trả về tổng tiền cho Backend
+        SELECT @final_total AS final_total;
     END TRY
     BEGIN CATCH
         ROLLBACK TRANSACTION;
@@ -246,6 +275,117 @@ BEGIN
         END
 
         COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END;
+GO
+
+-- =========================================================================
+-- PROCEDURE: TẠO ĐƠN ĐẶT PHÒNG KHÁCH HÀNG ONLINE (XỬ LÝ JSON)
+-- =========================================================================
+CREATE PROCEDURE sp_CreateCustomerBooking
+    @customer_id INT,
+    @check_in DATETIME,
+    @check_out DATETIME,
+    @total_price DECIMAL(15,2),
+    @room_id INT,
+    @price_at_booking DECIMAL(15,2),
+    @extra_guests_json NVARCHAR(MAX) -- Mảng JSON chứa những người đi cùng
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        
+        DECLARE @booking_id INT, @detail_id INT;
+
+        INSERT INTO Booking (customer_id, check_in_planned, check_out_planned, total_price, payment_status, booking_status)
+        VALUES (@customer_id, @check_in, @check_out, @total_price, 'partially_paid', 'pending');
+        SET @booking_id = SCOPE_IDENTITY();
+
+        INSERT INTO Booking_detail (booking_id, room_id, price_at_booking) 
+        VALUES (@booking_id, @room_id, @price_at_booking);
+        SET @detail_id = SCOPE_IDENTITY();
+
+        INSERT INTO Booking_guests (detail_id, customer_id, is_representative) 
+        VALUES (@detail_id, @customer_id, 1);
+
+        -- Tự động bóc tách JSON và chèn khách hàng đi cùng
+        IF @extra_guests_json IS NOT NULL AND LEN(@extra_guests_json) > 0
+        BEGIN
+            -- 1. Thêm khách hàng chưa có trong DB
+            INSERT INTO Customer (full_name, cccd)
+            SELECT j.name, j.cccd 
+            FROM OPENJSON(@extra_guests_json) WITH (name NVARCHAR(255) '$.name', cccd VARCHAR(50) '$.cccd') j
+            WHERE j.cccd <> '' AND j.name <> '' AND NOT EXISTS (SELECT 1 FROM Customer c WHERE c.cccd = j.cccd);
+
+            -- 2. Gắn khách hàng vào Booking_guests
+            INSERT INTO Booking_guests (detail_id, customer_id, is_representative)
+            SELECT @detail_id, c.customer_id, 0
+            FROM OPENJSON(@extra_guests_json) WITH (cccd VARCHAR(50) '$.cccd') j
+            JOIN Customer c ON j.cccd = c.cccd
+            WHERE j.cccd <> '';
+        END
+
+        COMMIT TRANSACTION;
+        SELECT @booking_id AS new_booking_id;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END;
+GO
+
+-- =========================================================================
+-- PROCEDURE: LỄ TÂN TẠO ĐƠN WALK-IN (CÓ KHÓA PHÒNG PESSIMISTIC)
+-- =========================================================================
+CREATE PROCEDURE sp_CreateWalkinBooking
+    @room_id INT,
+    @check_in DATETIME,
+    @check_out DATETIME,
+    @base_price DECIMAL(15,2),
+    @unit_price DECIMAL(15,2),
+    @guest_phone VARCHAR(20),
+    @guests_json NVARCHAR(MAX),
+    @rep_index INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        
+        -- Khóa phòng tránh xung đột
+        DECLARE @lock INT;
+        SELECT @lock = 1 FROM Room WITH (UPDLOCK, ROWLOCK) WHERE room_id = @room_id;
+
+        -- Check phòng trống
+        IF EXISTS (SELECT 1 FROM Booking_detail bd JOIN Booking b ON bd.booking_id = b.booking_id WHERE bd.room_id = @room_id AND b.booking_status NOT IN ('cancelled', 'completed') AND (b.check_in_planned < @check_out AND b.check_out_planned > @check_in))
+        BEGIN THROW 50001, 'ROOM_OCCUPIED', 1; END
+
+        -- Parse JSON và thêm khách
+        INSERT INTO Customer (full_name, cccd) SELECT j.name, j.cccd FROM OPENJSON(@guests_json) WITH (name NVARCHAR(255) '$.name', cccd VARCHAR(50) '$.cccd') j WHERE j.cccd <> '' AND j.name <> '' AND NOT EXISTS (SELECT 1 FROM Customer c WHERE c.cccd = j.cccd);
+
+        DECLARE @rep_cccd VARCHAR(50), @rep_customer_id INT;
+        SELECT @rep_cccd = JSON_VALUE(value, '$.cccd') FROM OPENJSON(@guests_json) WHERE [key] = CAST(@rep_index AS NVARCHAR(10));
+        SELECT @rep_customer_id = customer_id FROM Customer WHERE cccd = @rep_cccd;
+
+        IF @guest_phone <> '' BEGIN UPDATE Customer SET phone = @guest_phone WHERE customer_id = @rep_customer_id; END
+
+        DECLARE @booking_id INT, @detail_id INT;
+        INSERT INTO Booking (customer_id, check_in_planned, check_out_planned, total_price, payment_status, booking_status) VALUES (@rep_customer_id, @check_in, @check_out, @base_price, 'unpaid', 'checked-in');
+        SET @booking_id = SCOPE_IDENTITY();
+
+        INSERT INTO Booking_detail (booking_id, room_id, price_at_booking, actual_check_in) VALUES (@booking_id, @room_id, @unit_price, @check_in);
+        SET @detail_id = SCOPE_IDENTITY();
+
+        INSERT INTO Booking_guests (detail_id, customer_id, is_representative) SELECT @detail_id, c.customer_id, CASE WHEN j.cccd = @rep_cccd THEN 1 ELSE 0 END FROM OPENJSON(@guests_json) WITH (cccd VARCHAR(50) '$.cccd') j JOIN Customer c ON j.cccd = c.cccd WHERE j.cccd <> '';
+
+        COMMIT TRANSACTION;
+        SELECT 1 AS success;
     END TRY
     BEGIN CATCH
         ROLLBACK TRANSACTION;

@@ -151,44 +151,44 @@ $all_amenities = amenity_get_all();
     <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-    tailwind.config = {
-        theme: {
-            extend: {
-                fontFamily: {
-                    sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-                    italianno: ['"Italianno"', 'cursive'],
-                    viaoda: ['"Viaoda Libre"', 'serif']
-                },
-                keyframes: {
-                    shine: {
-                        '100%': {
-                            left: '200%'
-                        },
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        italianno: ['"Italianno"', 'cursive'],
+                        viaoda: ['"Viaoda Libre"', 'serif']
+                    },
+                    keyframes: {
+                        shine: {
+                            '100%': {
+                                left: '200%'
+                            },
+                        }
                     }
                 }
             }
         }
-    }
     </script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-    ::-webkit-scrollbar {
-        width: 8px;
-    }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
 
-    ::-webkit-scrollbar-track {
-        background: #f8fafc;
-    }
+        ::-webkit-scrollbar-track {
+            background: #f8fafc;
+        }
 
-    ::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 10px;
-    }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
 
-    ::-webkit-scrollbar-thumb:hover {
-        background: #818cf8;
-    }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #818cf8;
+        }
     </style>
 </head>
 
@@ -254,14 +254,14 @@ $all_amenities = amenity_get_all();
                     foreach ($all_amenities as $amn):
                         $checked = in_array($amn, $search_amenities) ? 'checked' : '';
                     ?>
-                    <label class="relative cursor-pointer group">
-                        <input type="checkbox" name="amenities[]" value="<?= $amn ?>" <?= $checked ?>
-                            class="peer sr-only">
-                        <span
-                            class="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-full text-xs font-bold transition-all duration-300 hover:border-indigo-300 peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:border-indigo-600 peer-checked:shadow-md peer-checked:shadow-indigo-200 flex items-center gap-1.5">
-                            <?= $amn ?>
-                        </span>
-                    </label>
+                        <label class="relative cursor-pointer group">
+                            <input type="checkbox" name="amenities[]" value="<?= $amn ?>" <?= $checked ?>
+                                class="peer sr-only">
+                            <span
+                                class="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-full text-xs font-bold transition-all duration-300 hover:border-indigo-300 peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:border-indigo-600 peer-checked:shadow-md peer-checked:shadow-indigo-200 flex items-center gap-1.5">
+                                <?= $amn ?>
+                            </span>
+                        </label>
                     <?php endforeach; ?>
                 </div>
             </form>
@@ -287,108 +287,108 @@ $all_amenities = amenity_get_all();
 
             <div class="text-center mb-16">
                 <?php if ($is_searched): ?>
-                <h2 class="text-5xl md:text-6xl font-viaoda text-white tracking-wide c">Phòng trống cho bạn
-                </h2>
-                <p
-                    class="text-indigo-300 mt-4 font-bold bg-indigo-900/40 border border-indigo-500/30 inline-block px-4 py-1.5 rounded-full backdrop-blur-sm shadow-lg">
-                    <i class="fa-solid fa-check mr-1"></i> Có <?= count($room_types) ?> hạng phòng phù hợp với yêu cầu
-                    của bạn
-                </p>
+                    <h2 class="text-5xl md:text-6xl font-viaoda text-white tracking-wide c">Phòng trống cho bạn
+                    </h2>
+                    <p
+                        class="text-indigo-300 mt-4 font-bold bg-indigo-900/40 border border-indigo-500/30 inline-block px-4 py-1.5 rounded-full backdrop-blur-sm shadow-lg">
+                        <i class="fa-solid fa-check mr-1"></i> Có <?= count($room_types) ?> hạng phòng phù hợp với yêu cầu
+                        của bạn
+                    </p>
                 <?php else: ?>
-                <h2 class="text-5xl md:text-6xl font-viaoda text-white tracking-wide drop-shadow-md">Lựa chọn của bạn
-                </h2>
-                <p class="text-slate-400 mt-4 font-medium font-sans">Các hạng phòng được thiết kế chuyên biệt để mang
-                    lại sự thoải mái tối đa.</p>
+                    <h2 class="text-5xl md:text-6xl font-viaoda text-white tracking-wide drop-shadow-md">Lựa chọn của bạn
+                    </h2>
+                    <p class="text-slate-400 mt-4 font-medium font-sans">Các hạng phòng được thiết kế chuyên biệt để mang
+                        lại sự thoải mái tối đa.</p>
                 <?php endif; ?>
             </div>
 
             <?php if (empty($room_types)): ?>
-            <div
-                class="text-center bg-slate-800/80 backdrop-blur-md p-12 rounded-3xl border border-slate-700 shadow-2xl max-w-2xl mx-auto">
-                <i class="fa-solid fa-bed-pulse text-6xl text-slate-500 mb-4"></i>
-                <h3 class="text-xl font-bold text-white">Rất tiếc, đã hết phòng!</h3>
-                <p class="text-slate-400 mt-2">Không có hạng phòng nào trống hoặc đủ sức chứa cho ngày bạn chọn. Vui
-                    lòng thay đổi thông tin tìm kiếm.</p>
-            </div>
-            <?php else: ?>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-                <?php foreach ($room_types as $rt): ?>
                 <div
-                    class="bg-white rounded-[2rem] overflow-hidden shadow-2xl shadow-black/50 border border-slate-800 group hover:-translate-y-2 transition-all duration-500 flex flex-col opacity-0 translate-y-10 reveal-card">
-                    <div class="relative h-72 overflow-hidden bg-slate-100">
+                    class="text-center bg-slate-800/80 backdrop-blur-md p-12 rounded-3xl border border-slate-700 shadow-2xl max-w-2xl mx-auto">
+                    <i class="fa-solid fa-bed-pulse text-6xl text-slate-500 mb-4"></i>
+                    <h3 class="text-xl font-bold text-white">Rất tiếc, đã hết phòng!</h3>
+                    <p class="text-slate-400 mt-2">Không có hạng phòng nào trống hoặc đủ sức chứa cho ngày bạn chọn. Vui
+                        lòng thay đổi thông tin tìm kiếm.</p>
+                </div>
+            <?php else: ?>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                    <?php foreach ($room_types as $rt): ?>
                         <div
-                            class="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent z-10 pointer-events-none">
-                        </div>
+                            class="bg-white rounded-[2rem] overflow-hidden shadow-2xl shadow-black/50 border border-slate-800 group hover:-translate-y-2 transition-all duration-500 flex flex-col opacity-0 translate-y-10 reveal-card">
+                            <div class="relative h-72 overflow-hidden bg-slate-100">
+                                <div
+                                    class="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent z-10 pointer-events-none">
+                                </div>
 
-                        <?php if (isset($mongo_images[$rt['type_id']])): ?>
-                        <img src="data:<?php echo $mongo_images[$rt['type_id']]['mime']; ?>;base64,<?php echo $mongo_images[$rt['type_id']]['base64']; ?>"
-                            class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
-                        <?php else: ?>
-                        <div class="flex items-center justify-center h-full text-slate-300"><i
-                                class="fa-solid fa-image text-5xl"></i></div>
-                        <?php endif; ?>
+                                <?php if (isset($mongo_images[$rt['type_id']])): ?>
+                                    <img src="data:<?php echo $mongo_images[$rt['type_id']]['mime']; ?>;base64,<?php echo $mongo_images[$rt['type_id']]['base64']; ?>"
+                                        class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+                                <?php else: ?>
+                                    <div class="flex items-center justify-center h-full text-slate-300"><i
+                                            class="fa-solid fa-image text-5xl"></i></div>
+                                <?php endif; ?>
 
-                        <div class="absolute bottom-4 left-4 z-20">
-                            <span
-                                class="bg-white/90 backdrop-blur-sm text-slate-800 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg shadow-sm">
-                                <?= $rt['capacity'] ?> Người lớn
-                            </span>
-                        </div>
-                    </div>
-                    <div class="p-8 flex-1 flex flex-col">
-                        <h3 class="text-2xl font-black text-slate-800 mb-2 uppercase tracking-tight">
-                            <?php echo htmlspecialchars($rt['name']); ?></h3>
-                        <p class="text-slate-500 text-sm line-clamp-3 mb-6 flex-1">
-                            <?php echo htmlspecialchars($rt['description']); ?></p>
-                        <div
-                            class="flex items-center gap-4 text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">
-                            <span><i class="fa-solid fa-user-group text-indigo-400 mr-1.5"></i>Tối đa
-                                <?php echo $rt['capacity']; ?> người</span>
-                        </div>
+                                <div class="absolute bottom-4 left-4 z-20">
+                                    <span
+                                        class="bg-white/90 backdrop-blur-sm text-slate-800 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg shadow-sm">
+                                        <?= $rt['capacity'] ?> Người lớn
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="p-8 flex-1 flex flex-col">
+                                <h3 class="text-2xl font-black text-slate-800 mb-2 uppercase tracking-tight">
+                                    <?php echo htmlspecialchars($rt['name']); ?></h3>
+                                <p class="text-slate-500 text-sm line-clamp-3 mb-6 flex-1">
+                                    <?php echo htmlspecialchars($rt['description']); ?></p>
+                                <div
+                                    class="flex items-center gap-4 text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">
+                                    <span><i class="fa-solid fa-user-group text-indigo-400 mr-1.5"></i>Tối đa
+                                        <?php echo $rt['capacity']; ?> người</span>
+                                </div>
 
-                        <?php if (isset($mongo_images[$rt['type_id']]) && !empty($mongo_images[$rt['type_id']]['amenities'])): ?>
-                        <div class="flex flex-wrap gap-2 mb-6">
-                            <?php foreach ($mongo_images[$rt['type_id']]['amenities'] as $amn): ?>
-                            <span
-                                class="px-2.5 py-1 bg-slate-50 border border-slate-200 text-slate-600 rounded-lg text-[10px] font-bold"><i
-                                    class="fa-solid fa-check text-emerald-500 mr-1"></i> <?= $amn ?></span>
-                            <?php endforeach; ?>
-                        </div>
-                        <?php endif; ?>
+                                <?php if (isset($mongo_images[$rt['type_id']]) && !empty($mongo_images[$rt['type_id']]['amenities'])): ?>
+                                    <div class="flex flex-wrap gap-2 mb-6">
+                                        <?php foreach ($mongo_images[$rt['type_id']]['amenities'] as $amn): ?>
+                                            <span
+                                                class="px-2.5 py-1 bg-slate-50 border border-slate-200 text-slate-600 rounded-lg text-[10px] font-bold"><i
+                                                    class="fa-solid fa-check text-emerald-500 mr-1"></i> <?= $amn ?></span>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
 
-                        <?php if (!$can_book): ?>
-                        <a href="#searchBar"
-                            onclick="document.getElementById('searchBar').classList.add('ring-4', 'ring-indigo-200', 'scale-[1.02]'); setTimeout(()=>document.getElementById('searchBar').classList.remove('ring-4', 'ring-indigo-200', 'scale-[1.02]'), 500);"
-                            class="mt-auto text-center w-full bg-slate-800 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-slate-900 transition active:scale-95">Chọn
-                            ngày để Đặt phòng</a>
-                        <?php else: ?>
-                        <?php
+                                <?php if (!$can_book): ?>
+                                    <a href="#searchBar"
+                                        onclick="document.getElementById('searchBar').classList.add('ring-4', 'ring-indigo-200', 'scale-[1.02]'); setTimeout(()=>document.getElementById('searchBar').classList.remove('ring-4', 'ring-indigo-200', 'scale-[1.02]'), 500);"
+                                        class="mt-auto text-center w-full bg-slate-800 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-slate-900 transition active:scale-95">Chọn
+                                        ngày để Đặt phòng</a>
+                                <?php else: ?>
+                                    <?php
                                     $total_dynamic_price = $rt['price_per_day'] * $dynamic_multiplier_sum;
                                     $price_fmt = number_format($total_dynamic_price, 0, ',', '.');
                                     ?>
-                        <div class="mt-auto pt-6 border-t border-slate-100 flex items-end justify-between">
-                            <div>
-                                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Giá từ
-                                </p>
-                                <p class="text-2xl font-black text-indigo-600 leading-none">
-                                    <?= number_format($total_dynamic_price ?? $rt['price_per_day'], 0, ',', '.') ?><span
-                                        class="text-sm text-slate-400 font-bold">đ</span>
-                                    <?php if (!$can_book): ?><span class="text-xs text-slate-400 font-medium font-sans">
-                                        /
-                                        đêm</span><?php endif; ?>
-                                </p>
+                                    <div class="mt-auto pt-6 border-t border-slate-100 flex items-end justify-between">
+                                        <div>
+                                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Giá từ
+                                            </p>
+                                            <p class="text-2xl font-black text-indigo-600 leading-none">
+                                                <?= number_format($total_dynamic_price ?? $rt['price_per_day'], 0, ',', '.') ?><span
+                                                    class="text-sm text-slate-400 font-bold">đ</span>
+                                                <?php if (!$can_book): ?><span class="text-xs text-slate-400 font-medium font-sans">
+                                                        /
+                                                        đêm</span><?php endif; ?>
+                                            </p>
+                                        </div>
+                                        <button
+                                            onclick="openBookingModal(<?= $rt['type_id'] ?>, '<?= htmlspecialchars(addslashes($rt['name'])) ?>', <?= $rt['price_per_day'] ?>, <?= $rt['capacity'] ?>)"
+                                            class="bg-slate-900 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg shadow-slate-200 hover:bg-indigo-600 transition duration-300 hover:-translate-y-1">
+                                            Đặt ngay
+                                        </button>
+                                    </div>
+                                <?php endif; ?>
                             </div>
-                            <button
-                                onclick="openBookingModal(<?= $rt['type_id'] ?>, '<?= htmlspecialchars(addslashes($rt['name'])) ?>', <?= $rt['price_per_day'] ?>, <?= $rt['capacity'] ?>)"
-                                class="bg-slate-900 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg shadow-slate-200 hover:bg-indigo-600 transition duration-300 hover:-translate-y-1">
-                                Đặt ngay
-                            </button>
                         </div>
-                        <?php endif; ?>
-                    </div>
+                    <?php endforeach; ?>
                 </div>
-                <?php endforeach; ?>
-            </div>
             <?php endif; ?>
         </div>
     </div>
@@ -462,138 +462,138 @@ $all_amenities = amenity_get_all();
     <script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
 
     <script>
-    // Lấy cấu hình giá từ Backend
-    const pricingConfig = <?php echo json_encode($pricing_config); ?>;
+        // Lấy cấu hình giá từ Backend
+        const pricingConfig = <?php echo json_encode($pricing_config); ?>;
 
-    let currentRoomName = '';
-    let baseTotalPrice = 0;
+        let currentRoomName = '';
+        let baseTotalPrice = 0;
 
-    document.addEventListener('DOMContentLoaded', () => {
-        let hasParams = false;
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('error') === 'no_room_available') {
-            showToast('Xin lỗi, không còn phòng trống trong khoảng thời gian này!', 'error');
-            hasParams = true;
-        } else if (urlParams.get('msg') === 'booking_success') {
-            showToast('Đặt phòng thành công! Hãy đợi nhân viên xác nhận.', 'success');
-            hasParams = true;
-        } else if (urlParams.get('error') === 'not_approved') {
-            showToast('Tài khoản chưa được phê duyệt. Vui lòng cập nhật hồ sơ và chờ Admin duyệt!', 'warning');
-            hasParams = true;
+        document.addEventListener('DOMContentLoaded', () => {
+            let hasParams = false;
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('error') === 'no_room_available') {
+                showToast('Xin lỗi, không còn phòng trống trong khoảng thời gian này!', 'error');
+                hasParams = true;
+            } else if (urlParams.get('msg') === 'booking_success') {
+                showToast('Đặt phòng thành công! Hãy đợi nhân viên xác nhận.', 'success');
+                hasParams = true;
+            } else if (urlParams.get('error') === 'not_approved') {
+                showToast('Tài khoản chưa được phê duyệt. Vui lòng cập nhật hồ sơ và chờ Admin duyệt!', 'warning');
+                hasParams = true;
+            }
+
+            // Tự động xóa tham số URL rác đi để làm sạch thanh địa chỉ
+            if (hasParams) {
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+
+            // Kiểm tra tính hợp lệ của Ngày nhận / Trả phòng
+            const checkInInput = document.querySelector('form#searchBar input[name="check_in"]');
+            const checkOutInput = document.querySelector('form#searchBar input[name="check_out"]');
+
+            if (checkInInput && checkOutInput) {
+                checkInInput.addEventListener('change', function() {
+                    if (!this.value) return;
+
+                    const today = new Date();
+                    const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2,
+                        '0') + '-' + String(today.getDate()).padStart(2, '0');
+
+                    if (this.value < todayStr) {
+                        showToast('Lỗi: Ngày nhận phòng không được chọn trong quá khứ!', 'error');
+                        this.value = '';
+                        return;
+                    }
+
+                    const [y, m, d] = this.value.split('-').map(Number);
+                    const nextDay = new Date(y, m - 1, d + 1);
+                    const nextDayStr = nextDay.getFullYear() + '-' + String(nextDay.getMonth() + 1)
+                        .padStart(2, '0') + '-' + String(nextDay.getDate()).padStart(2, '0');
+
+                    checkOutInput.min = nextDayStr; // Cập nhật ngày tối thiểu cho ô Trả phòng
+
+                    if (checkOutInput.value && checkOutInput.value <= this.value) {
+                        showToast('Lỗi: Ngày trả phòng phải sau ngày nhận phòng ít nhất 1 ngày!', 'error');
+                        checkOutInput.value = '';
+                    }
+                });
+
+                checkOutInput.addEventListener('change', function() {
+                    if (!this.value) return;
+
+                    if (!checkInInput.value) {
+                        showToast('Vui lòng chọn ngày nhận phòng trước!', 'warning');
+                        this.value = '';
+                        return;
+                    }
+
+                    if (this.value <= checkInInput.value) {
+                        showToast('Lỗi: Ngày trả phòng phải sau ngày nhận phòng ít nhất 1 ngày!', 'error');
+                        this.value = '';
+                    }
+                });
+            }
+        });
+
+        let currentRoomCapacity = 0;
+
+        function openBookingModal(typeId, name, priceDay, capacity) {
+            <?php if (!isset($_SESSION['user_id'])): ?>
+                window.location.href = 'login.php';
+                return;
+            <?php endif; ?>
+
+            document.getElementById('cb_type_id').value = typeId;
+            document.getElementById('cb_price_per_day').value = priceDay;
+            currentRoomName = name;
+            currentRoomCapacity = capacity;
+
+            const guestList = document.getElementById('customerGuestList');
+            if (guestList) guestList.innerHTML = '';
+
+            document.getElementById('customerBookingModal').classList.remove('hidden');
+            document.getElementById('customerBookingModal').classList.add('flex');
         }
 
-        // Tự động xóa tham số URL rác đi để làm sạch thanh địa chỉ
-        if (hasParams) {
-            window.history.replaceState({}, document.title, window.location.pathname);
+        function closeBookingModal() {
+            document.getElementById('customerBookingModal').classList.add('hidden');
+            document.getElementById('customerBookingModal').classList.remove('flex');
         }
 
-        // Kiểm tra tính hợp lệ của Ngày nhận / Trả phòng
-        const checkInInput = document.querySelector('form#searchBar input[name="check_in"]');
-        const checkOutInput = document.querySelector('form#searchBar input[name="check_out"]');
+        function checkCCCD_Customer(input, index) {
+            const cccd = input.value.trim();
+            const nameInput = document.getElementById(`g_name_${index}`);
 
-        if (checkInInput && checkOutInput) {
-            checkInInput.addEventListener('change', function() {
-                if (!this.value) return;
+            if (cccd.length <= 5) {
+                nameInput.readOnly = false;
+                nameInput.classList.remove('bg-indigo-50', 'text-indigo-700', 'cursor-not-allowed');
+                return;
+            }
 
-                const today = new Date();
-                const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2,
-                    '0') + '-' + String(today.getDate()).padStart(2, '0');
-
-                if (this.value < todayStr) {
-                    showToast('Lỗi: Ngày nhận phòng không được chọn trong quá khứ!', 'error');
-                    this.value = '';
-                    return;
-                }
-
-                const [y, m, d] = this.value.split('-').map(Number);
-                const nextDay = new Date(y, m - 1, d + 1);
-                const nextDayStr = nextDay.getFullYear() + '-' + String(nextDay.getMonth() + 1)
-                    .padStart(2, '0') + '-' + String(nextDay.getDate()).padStart(2, '0');
-
-                checkOutInput.min = nextDayStr; // Cập nhật ngày tối thiểu cho ô Trả phòng
-
-                if (checkOutInput.value && checkOutInput.value <= this.value) {
-                    showToast('Lỗi: Ngày trả phòng phải sau ngày nhận phòng ít nhất 1 ngày!', 'error');
-                    checkOutInput.value = '';
-                }
-            });
-
-            checkOutInput.addEventListener('change', function() {
-                if (!this.value) return;
-
-                if (!checkInInput.value) {
-                    showToast('Vui lòng chọn ngày nhận phòng trước!', 'warning');
-                    this.value = '';
-                    return;
-                }
-
-                if (this.value <= checkInInput.value) {
-                    showToast('Lỗi: Ngày trả phòng phải sau ngày nhận phòng ít nhất 1 ngày!', 'error');
-                    this.value = '';
-                }
-            });
-        }
-    });
-
-    let currentRoomCapacity = 0;
-
-    function openBookingModal(typeId, name, priceDay, capacity) {
-        <?php if (!isset($_SESSION['user_id'])): ?>
-        window.location.href = 'login.php';
-        return;
-        <?php endif; ?>
-
-        document.getElementById('cb_type_id').value = typeId;
-        document.getElementById('cb_price_per_day').value = priceDay;
-        currentRoomName = name;
-        currentRoomCapacity = capacity;
-
-        const guestList = document.getElementById('customerGuestList');
-        if (guestList) guestList.innerHTML = '';
-
-        document.getElementById('customerBookingModal').classList.remove('hidden');
-        document.getElementById('customerBookingModal').classList.add('flex');
-    }
-
-    function closeBookingModal() {
-        document.getElementById('customerBookingModal').classList.add('hidden');
-        document.getElementById('customerBookingModal').classList.remove('flex');
-    }
-
-    function checkCCCD_Customer(input, index) {
-        const cccd = input.value.trim();
-        const nameInput = document.getElementById(`g_name_${index}`);
-
-        if (cccd.length <= 5) {
-            nameInput.readOnly = false;
-            nameInput.classList.remove('bg-indigo-50', 'text-indigo-700', 'cursor-not-allowed');
-            return;
+            fetch(`../actions/process_booking.php?action=check_cccd&cccd=${cccd}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'found') {
+                        nameInput.value = data.name || '';
+                        nameInput.readOnly = true;
+                        nameInput.classList.add('bg-indigo-50', 'text-indigo-700', 'cursor-not-allowed');
+                    } else {
+                        nameInput.readOnly = false;
+                        nameInput.classList.remove('bg-indigo-50', 'text-indigo-700', 'cursor-not-allowed');
+                    }
+                });
         }
 
-        fetch(`../actions/process_booking.php?action=check_cccd&cccd=${cccd}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === 'found') {
-                    nameInput.value = data.name || '';
-                    nameInput.readOnly = true;
-                    nameInput.classList.add('bg-indigo-50', 'text-indigo-700', 'cursor-not-allowed');
-                } else {
-                    nameInput.readOnly = false;
-                    nameInput.classList.remove('bg-indigo-50', 'text-indigo-700', 'cursor-not-allowed');
-                }
-            });
-    }
+        function addCustomerGuestRow() {
+            const list = document.getElementById('customerGuestList');
+            if (list.children.length >= currentRoomCapacity - 1) {
+                showToast('Đã đạt giới hạn số người tối đa cho hạng phòng này!', 'warning');
+                return;
+            }
 
-    function addCustomerGuestRow() {
-        const list = document.getElementById('customerGuestList');
-        if (list.children.length >= currentRoomCapacity - 1) {
-            showToast('Đã đạt giới hạn số người tối đa cho hạng phòng này!', 'warning');
-            return;
-        }
+            const index = Date.now();
 
-        const index = Date.now();
-
-        const html = `
+            const html = `
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl relative" id="cb_g_row_${index}">
                 <button type="button" onclick="document.getElementById('cb_g_row_${index}').remove()" class="absolute -top-2 -right-2 bg-rose-100 text-rose-500 w-6 h-6 rounded-full flex items-center justify-center hover:bg-rose-500 hover:text-white transition shadow-sm"><i class="fa-solid fa-xmark text-[10px]"></i></button>
                 <div>
@@ -606,153 +606,162 @@ $all_amenities = amenity_get_all();
                 </div>
             </div>
         `;
-        list.insertAdjacentHTML('beforeend', html);
-    }
-
-    // Chuyển sang Bước 2 (Kiểm tra form trước)
-    function goToStep2() {
-        const form = document.getElementById('customerBookingForm');
-        if (!form.reportValidity()) return; // Kích hoạt popup báo lỗi HTML5 nếu thiếu tên/cccd
-
-        // Tính toán tổng tiền
-        const checkInDate = new Date('<?= $search_in ?>');
-        const checkOutDate = new Date('<?= $search_out ?>');
-        const priceDay = parseInt(document.getElementById('cb_price_per_day').value);
-
-        baseTotalPrice = 0;
-        let currentDate = new Date(checkInDate);
-
-        while (currentDate < checkOutDate) {
-            let dayOfWeek = currentDate.getDay(); // 0: Chủ Nhật, 6: Thứ Bảy
-            let dateMD = String(currentDate.getDate()).padStart(2, '0') + '-' + String(currentDate.getMonth() + 1)
-                .padStart(2, '0');
-
-            if (pricingConfig.holidays.includes(dateMD)) {
-                baseTotalPrice += priceDay * pricingConfig.holiday_multiplier;
-            } else if (dayOfWeek === 0 || dayOfWeek === 6) {
-                baseTotalPrice += priceDay * pricingConfig.weekend_multiplier;
-            } else {
-                baseTotalPrice += priceDay;
-            }
-            currentDate.setDate(currentDate.getDate() + 1);
+            list.insertAdjacentHTML('beforeend', html);
         }
-        if (baseTotalPrice === 0) baseTotalPrice = priceDay;
 
-        document.getElementById('conf_room_name').innerText = currentRoomName;
-        document.getElementById('conf_total_price').innerText = new Intl.NumberFormat('vi-VN').format(baseTotalPrice) +
-            'đ';
+        // Chuyển sang Bước 2 (Kiểm tra form trước)
+        function goToStep2() {
+            const form = document.getElementById('customerBookingForm');
+            if (!form.reportValidity()) return; // Kích hoạt popup báo lỗi HTML5 nếu thiếu tên/cccd
 
-        // Tính và Hiển thị tiền cọc
-        const depositPercent = pricingConfig.deposit_percent || 30;
-        const depositAmount = baseTotalPrice * (depositPercent / 100);
-        document.getElementById('conf_deposit_percent').innerText = depositPercent;
-        document.getElementById('conf_deposit_amount').innerText = new Intl.NumberFormat('vi-VN').format(depositAmount) + 'đ';
+            // Tính toán tổng tiền
+            const checkInDate = new Date('<?= $search_in ?>');
+            const checkOutDate = new Date('<?= $search_out ?>');
+            const priceDay = parseInt(document.getElementById('cb_price_per_day').value);
 
-        // Reset trạng thái Promo
-        document.getElementById('cb_promo_code_hidden').value = '';
-        document.getElementById('promo_input').value = '';
-        document.getElementById('promo_input').readOnly = false;
-        document.getElementById('promo_msg').classList.add('hidden');
-        document.getElementById('discount_row').classList.add('hidden');
-        document.getElementById('btnApplyPromo').innerText = 'Áp dụng';
+            baseTotalPrice = 0;
+            let currentDate = new Date(checkInDate);
 
-        document.getElementById('customerBookingModal').classList.replace('flex', 'hidden');
-        document.getElementById('confirmBookingModal').classList.replace('hidden', 'flex');
-    }
+            while (currentDate < checkOutDate) {
+                let dayOfWeek = currentDate.getDay(); // 0: Chủ Nhật, 6: Thứ Bảy
+                let dateMD = String(currentDate.getDate()).padStart(2, '0') + '-' + String(currentDate.getMonth() + 1)
+                    .padStart(2, '0');
 
-    // Xử lý áp dụng mã giảm giá
-    function applyPromoCode() {
-        const code = document.getElementById('promo_input').value.trim().toUpperCase();
-        const msgLabel = document.getElementById('promo_msg');
-        const btn = document.getElementById('btnApplyPromo');
-
-        if (!code) return;
-
-        btn.innerText = '...';
-        btn.disabled = true;
-
-        fetch(`../actions/process_booking.php?action=check_promo&code=${code}`)
-            .then(res => res.json())
-            .then(data => {
-                btn.innerText = 'Áp dụng';
-                btn.disabled = false;
-                msgLabel.classList.remove('hidden');
-
-                if (data.status === 'success') {
-                    msgLabel.className = 'text-xs font-bold mt-2 text-emerald-600';
-                    msgLabel.innerHTML = `<i class="fa-solid fa-circle-check mr-1"></i> Áp dụng mã thành công!`;
-                    document.getElementById('cb_promo_code_hidden').value = code;
-                    document.getElementById('promo_input').readOnly = true;
-
-                    const discountAmount = baseTotalPrice * (data.discount / 100);
-                    const finalPrice = baseTotalPrice - discountAmount;
-                    
-                    const depositPercent = pricingConfig.deposit_percent || 30;
-                    const depositAmount = finalPrice * (depositPercent / 100);
-
-                    document.getElementById('discount_row').classList.remove('hidden');
-                    document.getElementById('discount_row').classList.add('flex');
-                    document.getElementById('discount_percent_label').innerText = `-${data.discount}%`;
-                    document.getElementById('discount_amount_label').innerText = '-' + new Intl.NumberFormat(
-                        'vi-VN').format(discountAmount) + 'đ';
-                    document.getElementById('conf_total_price').innerText = new Intl.NumberFormat('vi-VN').format(
-                        finalPrice) + 'đ';
-                    document.getElementById('conf_deposit_amount').innerText = new Intl.NumberFormat('vi-VN').format(depositAmount) + 'đ';
+                if (pricingConfig.holidays.includes(dateMD)) {
+                    baseTotalPrice += priceDay * pricingConfig.holiday_multiplier;
+                } else if (dayOfWeek === 0 || dayOfWeek === 6) {
+                    baseTotalPrice += priceDay * pricingConfig.weekend_multiplier;
                 } else {
-                    msgLabel.className = 'text-xs font-bold mt-2 text-rose-500';
-                    msgLabel.innerHTML = `<i class="fa-solid fa-circle-xmark mr-1"></i> ${data.message}`;
-                    document.getElementById('cb_promo_code_hidden').value = '';
-                    document.getElementById('discount_row').classList.add('hidden');
-                    document.getElementById('discount_row').classList.remove('flex');
-                    document.getElementById('conf_total_price').innerText = new Intl.NumberFormat('vi-VN').format(
-                        baseTotalPrice) + 'đ';
-                        
-                    const depositPercent = pricingConfig.deposit_percent || 30;
-                    const depositAmount = baseTotalPrice * (depositPercent / 100);
-                    document.getElementById('conf_deposit_amount').innerText = new Intl.NumberFormat('vi-VN').format(depositAmount) + 'đ';
+                    baseTotalPrice += priceDay;
                 }
-            })
-            .catch(err => {
-                btn.innerText = 'Áp dụng';
-                btn.disabled = false;
-                showToast('Lỗi kết nối máy chủ!', 'error');
-            });
-    }
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            if (baseTotalPrice === 0) baseTotalPrice = priceDay;
 
-    // Submit Form thật sự lên máy chủ
-    function submitFinalBooking() {
-        const btnText = document.getElementById('btnSubmitText');
-        const btnSpinner = document.getElementById('btnSubmitSpinner');
-        const submitBtn = document.getElementById('btnSubmitBooking');
+            document.getElementById('conf_room_name').innerText = currentRoomName;
+            document.getElementById('conf_total_price').innerText = new Intl.NumberFormat('vi-VN').format(baseTotalPrice) +
+                'đ';
 
-        submitBtn.disabled = true;
-        btnText.innerText = "Đang xử lý tạo đơn...";
-        btnSpinner.classList.remove('hidden');
+            // Hiển thị đúng số lượng khách hàng (Bao gồm người đặt chính + số khách đi cùng)
+            const totalGuests = 1 + document.getElementById('customerGuestList').children.length;
+            if (document.getElementById('conf_guests')) {
+                document.getElementById('conf_guests').innerText = totalGuests + ' người';
+            }
 
-        const formData = new FormData(document.getElementById('customerBookingForm'));
+            // Tính và Hiển thị tiền cọc
+            const depositPercent = pricingConfig.deposit_percent || 30;
+            const depositAmount = baseTotalPrice * (depositPercent / 100);
+            document.getElementById('conf_deposit_percent').innerText = depositPercent;
+            document.getElementById('conf_deposit_amount').innerText = new Intl.NumberFormat('vi-VN').format(
+                depositAmount) + 'đ';
 
-        fetch('../actions/process_booking.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                submitBtn.disabled = false;
-                btnText.innerText = "Gửi Yêu Cầu Đặt Phòng";
-                btnSpinner.classList.add('hidden');
+            // Reset trạng thái Promo
+            document.getElementById('cb_promo_code_hidden').value = '';
+            document.getElementById('promo_input').value = '';
+            document.getElementById('promo_input').readOnly = false;
+            document.getElementById('promo_msg').classList.add('hidden');
+            document.getElementById('discount_row').classList.add('hidden');
+            document.getElementById('btnApplyPromo').innerText = 'Áp dụng';
 
-                showToast(data.message, data.status);
-                if (data.status === 'success') {
-                    document.getElementById('confirmBookingModal').classList.replace('flex', 'hidden');
-                }
-            })
-            .catch(error => {
-                showToast('Lỗi kết nối đến máy chủ!', 'error');
-                submitBtn.disabled = false;
-                btnText.innerText = "Gửi Yêu Cầu Đặt Phòng";
-                btnSpinner.classList.add('hidden');
-            });
-    }
+            document.getElementById('customerBookingModal').classList.replace('flex', 'hidden');
+            document.getElementById('confirmBookingModal').classList.replace('hidden', 'flex');
+        }
+
+        // Xử lý áp dụng mã giảm giá
+        function applyPromoCode() {
+            const code = document.getElementById('promo_input').value.trim().toUpperCase();
+            const msgLabel = document.getElementById('promo_msg');
+            const btn = document.getElementById('btnApplyPromo');
+
+            if (!code) return;
+
+            btn.innerText = '...';
+            btn.disabled = true;
+
+            fetch(`../actions/process_booking.php?action=check_promo&code=${code}`)
+                .then(res => res.json())
+                .then(data => {
+                    btn.innerText = 'Áp dụng';
+                    btn.disabled = false;
+                    msgLabel.classList.remove('hidden');
+
+                    if (data.status === 'success') {
+                        msgLabel.className = 'text-xs font-bold mt-2 text-emerald-600';
+                        msgLabel.innerHTML = `<i class="fa-solid fa-circle-check mr-1"></i> Áp dụng mã thành công!`;
+                        document.getElementById('cb_promo_code_hidden').value = code;
+                        document.getElementById('promo_input').readOnly = true;
+
+                        const discountAmount = baseTotalPrice * (data.discount / 100);
+                        const finalPrice = baseTotalPrice - discountAmount;
+
+                        const depositPercent = pricingConfig.deposit_percent || 30;
+                        const depositAmount = finalPrice * (depositPercent / 100);
+
+                        document.getElementById('discount_row').classList.remove('hidden');
+                        document.getElementById('discount_row').classList.add('flex');
+                        document.getElementById('discount_percent_label').innerText = `-${data.discount}%`;
+                        document.getElementById('discount_amount_label').innerText = '-' + new Intl.NumberFormat(
+                            'vi-VN').format(discountAmount) + 'đ';
+                        document.getElementById('conf_total_price').innerText = new Intl.NumberFormat('vi-VN').format(
+                            finalPrice) + 'đ';
+                        document.getElementById('conf_deposit_amount').innerText = new Intl.NumberFormat('vi-VN')
+                            .format(depositAmount) + 'đ';
+                    } else {
+                        msgLabel.className = 'text-xs font-bold mt-2 text-rose-500';
+                        msgLabel.innerHTML = `<i class="fa-solid fa-circle-xmark mr-1"></i> ${data.message}`;
+                        document.getElementById('cb_promo_code_hidden').value = '';
+                        document.getElementById('discount_row').classList.add('hidden');
+                        document.getElementById('discount_row').classList.remove('flex');
+                        document.getElementById('conf_total_price').innerText = new Intl.NumberFormat('vi-VN').format(
+                            baseTotalPrice) + 'đ';
+
+                        const depositPercent = pricingConfig.deposit_percent || 30;
+                        const depositAmount = baseTotalPrice * (depositPercent / 100);
+                        document.getElementById('conf_deposit_amount').innerText = new Intl.NumberFormat('vi-VN')
+                            .format(depositAmount) + 'đ';
+                    }
+                })
+                .catch(err => {
+                    btn.innerText = 'Áp dụng';
+                    btn.disabled = false;
+                    showToast('Lỗi kết nối máy chủ!', 'error');
+                });
+        }
+
+        // Submit Form thật sự lên máy chủ
+        function submitFinalBooking() {
+            const btnText = document.getElementById('btnSubmitText');
+            const btnSpinner = document.getElementById('btnSubmitSpinner');
+            const submitBtn = document.getElementById('btnSubmitBooking');
+
+            submitBtn.disabled = true;
+            btnText.innerText = "Đang xử lý tạo đơn...";
+            btnSpinner.classList.remove('hidden');
+
+            const formData = new FormData(document.getElementById('customerBookingForm'));
+
+            fetch('../actions/process_booking.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    submitBtn.disabled = false;
+                    btnText.innerText = "Gửi Yêu Cầu Đặt Phòng";
+                    btnSpinner.classList.add('hidden');
+
+                    showToast(data.message, data.status);
+                    if (data.status === 'success') {
+                        document.getElementById('confirmBookingModal').classList.replace('flex', 'hidden');
+                    }
+                })
+                .catch(error => {
+                    showToast('Lỗi kết nối đến máy chủ!', 'error');
+                    submitBtn.disabled = false;
+                    btnText.innerText = "Gửi Yêu Cầu Đặt Phòng";
+                    btnSpinner.classList.add('hidden');
+                });
+        }
     </script>
 </body>
 

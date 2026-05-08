@@ -28,7 +28,7 @@
             </div>
             <div class="flex justify-between items-center border-b border-dashed border-slate-200 pb-3">
                 <span class="text-sm font-medium text-slate-500">Khách lưu trú</span>
-                <span class="text-sm font-bold text-slate-800"><?= $search_guests ?> Người</span>
+                <span id="conf_guests" class="text-sm font-bold text-slate-800"><?= $search_guests ?> Người</span>
             </div>
 
             <!-- Khung nhập mã giảm giá -->

@@ -158,6 +158,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 }
             }
             $ok = booking_update_status_transaction($booking_id, $status, $deduct_amount);
+        $ok = booking_update_status($booking_id, $status, $deduct_amount);
         }
 
         if ($ok) {
