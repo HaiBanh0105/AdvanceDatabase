@@ -86,6 +86,43 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $data = $_SESSION['reg_data'];
             $sql_insert = "INSERT INTO Account (email, password, status) VALUES (?, ?, 'pending')";
             if (db_execute($sql_insert, $data['email'], $data['password'])) {
+
+                // Gửi email chào mừng
+                try {
+                    $mail = new PHPMailer(true);
+                    $mail->isSMTP();
+                    $mail->Host       = MAIL_HOST;
+                    $mail->SMTPAuth   = true;
+                    $mail->Username   = MAIL_USERNAME;
+                    $mail->Password   = MAIL_PASSWORD;
+                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+                    $mail->Port       = MAIL_PORT;
+                    $mail->CharSet    = 'UTF-8';
+
+                    $mail->setFrom(MAIL_USERNAME, MAIL_FROM_NAME);
+                    $mail->addAddress($data['email']);
+
+                    $mail->isHTML(true);
+                    $mail->Subject = 'Chào mừng bạn đến với Grand Horizon!';
+                    $mail->Body    = "
+                        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;'>
+                            <div style='background-color: #4F46E5; color: white; padding: 20px; text-align: center;'>
+                                <h2 style='margin: 0;'>Chào mừng đến với Grand Horizon</h2>
+                            </div>
+                            <div style='padding: 20px; color: #374151; line-height: 1.6;'>
+                                <p>Xin chào,</p>
+                                <p>Chúc mừng bạn đã đăng ký tài khoản thành công tại hệ thống của <b>Grand Horizon</b>!</p>
+                                <p>Tài khoản của bạn hiện đang ở trạng thái chờ duyệt. Vui lòng cập nhật đầy đủ thông tin hồ sơ cá nhân để quản trị viên có thể phê duyệt tài khoản của bạn trong thời gian sớm nhất.</p>
+                                <p>Nếu có bất kỳ thắc mắc nào, đừng ngần ngại liên hệ với bộ phận CSKH của chúng tôi.</p>
+                                <p>Trân trọng,<br>Đội ngũ Grand Horizon</p>
+                            </div>
+                        </div>
+                    ";
+                    $mail->send();
+                } catch (Exception $e) {
+                    error_log('Welcome Mail Error: ' . $e->getMessage());
+                }
+
                 unset($_SESSION['reg_otp'], $_SESSION['reg_data'], $_SESSION['reg_otp_time']);
                 echo json_encode(['status' => 'success', 'message' => 'Đăng ký thành công! Đang chuyển hướng...']);
             } else {

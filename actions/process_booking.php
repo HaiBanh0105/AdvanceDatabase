@@ -6,6 +6,15 @@ if (!isset($_SESSION['user_id'])) {
 }
 require_once '../dao/booking_dao.php';
 require_once '../dao/promotion_dao.php';
+require_once '../config/mail_config.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception;
+
+require_once '../PHPMailer/Exception.php';
+require_once '../PHPMailer/PHPMailer.php';
+require_once '../PHPMailer/SMTP.php';
 
 header('Content-Type: application/json');
 
@@ -64,25 +73,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $booking = db_query_one("SELECT booking_status FROM Booking WHERE booking_id = ? AND customer_id = ?", $booking_id, $customer_id);
         if ($booking && in_array(strtolower($booking['booking_status']), ['pending', 'confirmed'])) {
             $current_status = strtolower($booking['booking_status']);
-            if (booking_update_status($booking_id, 'cancelled')) {
-                $meta = booking_get_meta($booking_id);
-                if ($meta) {
-                    $penalty_amount = $meta['deposit_amount'] / 2; // Phạt 50% tiền cọc
 
-                    if ($current_status === 'confirmed' || $current_status === 'checked-in') {
-                        // Đơn đã duyệt (đã bị trừ 100% cọc) -> Hoàn lại 50% (giữ 50% làm phạt)
-                        if (!empty($meta['is_deducted'])) {
-                            $refund_amount = $meta['deposit_amount'] - $penalty_amount;
-                            db_execute("UPDATE Account SET balance = balance + ? WHERE customer_id = ?", $refund_amount, $customer_id);
-                            
-                            // Ghi nhận phí phạt vào tổng tiền để tính doanh thu cho Admin
-                            db_execute("UPDATE Booking SET total_price = ? WHERE booking_id = ?", $penalty_amount, $booking_id);
-                        }
-                    } elseif ($current_status === 'pending') {
-                        // Đơn chưa duyệt (chưa bị trừ cọc) -> Không phạt tiền khách hàng, cho phép hủy miễn phí
-                        db_execute("UPDATE Booking SET total_price = 0 WHERE booking_id = ?", $booking_id);
+            $refund_amount = 0;
+            $new_total_price = 0; // Mặc định hủy đơn chưa duyệt thì không bị phạt (Tổng bill = 0)
+
+            $meta = booking_get_meta($booking_id);
+            if ($meta) {
+                $penalty_amount = $meta['deposit_amount'] / 2; // Phạt 50% tiền cọc
+                if ($current_status === 'confirmed' || $current_status === 'checked-in') {
+                    if (!empty($meta['is_deducted'])) {
+                        $refund_amount = $meta['deposit_amount'] - $penalty_amount;
+                        $new_total_price = $penalty_amount; // Đặt tổng bill thành tiền phạt để làm Doanh thu
                     }
                 }
+            }
+
+            if (booking_cancel_transaction($booking_id, $refund_amount, $new_total_price)) {
                 echo json_encode(['status' => 'success', 'message' => 'Hủy đặt phòng thành công!']);
             } else {
                 echo json_encode(['status' => 'error', 'message' => 'Lỗi hệ thống khi cập nhật trạng thái!']);
@@ -202,6 +208,55 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // Trừ số lượng mã khuyến mãi bên MongoDB sau khi giao dịch SQL thành công
         if ($applied_promo_id) {
             promotion_decrement_quantity($applied_promo_id);
+        }
+
+        // Gửi email thông báo đã nhận yêu cầu đặt phòng
+        try {
+            $customer_email = db_query_value("SELECT email FROM Account WHERE account_id = ?", $user_id);
+            $customer_name = $_SESSION['full_name'] ?? 'Khách hàng';
+            $room_name = db_query_value("SELECT name FROM Room_types WHERE type_id = ?", $type_id);
+            $total_price_formatted = number_format($total_price, 0, ',', '.');
+            $deposit_formatted = number_format($deposit_amount, 0, ',', '.');
+
+            $mail = new PHPMailer(true);
+            $mail->isSMTP();
+            $mail->Host       = MAIL_HOST;
+            $mail->SMTPAuth   = true;
+            $mail->Username   = MAIL_USERNAME;
+            $mail->Password   = MAIL_PASSWORD;
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+            $mail->Port       = MAIL_PORT;
+            $mail->CharSet    = 'UTF-8';
+
+            $mail->setFrom(MAIL_USERNAME, MAIL_FROM_NAME);
+            $mail->addAddress($customer_email);
+            $mail->isHTML(true);
+
+            $mail->Subject = 'Yêu cầu đặt phòng đang được xử lý - Grand Horizon';
+            $mail->Body = "
+                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;'>
+                    <div style='background-color: #4F46E5; color: white; padding: 20px; text-align: center;'>
+                        <h2 style='margin: 0;'>Yêu cầu đặt phòng đã được ghi nhận</h2>
+                    </div>
+                    <div style='padding: 20px; color: #374151; line-height: 1.6;'>
+                        <p>Xin chào <b>$customer_name</b>,</p>
+                        <p>Cảm ơn bạn đã lựa chọn Grand Horizon. Chúng tôi đã nhận được yêu cầu đặt phòng của bạn và đang tiến hành xử lý.</p>
+                        <h3 style='color: #4F46E5; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px;'>Chi tiết yêu cầu:</h3>
+                        <ul style='list-style-type: none; padding: 0;'>
+                            <li style='margin-bottom: 8px;'><b>🏨 Hạng phòng:</b> $room_name</li>
+                            <li style='margin-bottom: 8px;'><b>📥 Nhận phòng:</b> " . date('d/m/Y H:i', strtotime($check_in)) . "</li>
+                            <li style='margin-bottom: 8px;'><b>📤 Trả phòng:</b> " . date('d/m/Y H:i', strtotime($check_out)) . "</li>
+                            <li style='margin-bottom: 8px;'><b>💰 Tổng tiền:</b> <span style='color: #E11D48; font-weight: bold;'>$total_price_formatted đ</span></li>
+                            <li style='margin-bottom: 8px;'><b>💳 Số tiền cần cọc:</b> $deposit_formatted đ</li>
+                        </ul>
+                        <p>Quản trị viên sẽ xem xét yêu cầu và gửi email xác nhận trong thời gian sớm nhất.</p>
+                        <p>Trân trọng,<br>Đội ngũ Grand Horizon</p>
+                    </div>
+                </div>
+            ";
+            $mail->send();
+        } catch (Exception $e) {
+            error_log('Booking Request Mail Error: ' . $e->getMessage());
         }
     } catch (Exception $e) {
         if ($conn->inTransaction()) {

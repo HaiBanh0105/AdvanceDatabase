@@ -186,6 +186,74 @@ BEGIN
 END;
 GO
 
+-- PROCEDURE: DUYỆT ĐƠN HOẶC CHECK-IN (CÓ TRỪ CỌC)
+CREATE PROCEDURE sp_UpdateBookingStatus
+    @booking_id INT,
+    @new_status NVARCHAR(50),
+    @deduct_amount DECIMAL(15,2) = 0
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        
+        -- Cập nhật trạng thái
+        UPDATE Booking SET booking_status = @new_status WHERE booking_id = @booking_id;
+
+        -- Nếu là checked-in thì tự động cập nhật giờ vào thực tế
+        IF @new_status = 'checked-in'
+        BEGIN
+            UPDATE Booking_detail SET actual_check_in = GETDATE() WHERE booking_id = @booking_id;
+        END
+
+        -- Trừ tiền cọc trong ví tài khoản
+        IF @deduct_amount > 0
+        BEGIN
+            DECLARE @customer_id INT;
+            SELECT @customer_id = customer_id FROM Booking WHERE booking_id = @booking_id;
+            UPDATE Account SET balance = balance - @deduct_amount WHERE customer_id = @customer_id;
+        END
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END;
+GO
+
+-- PROCEDURE: HỦY ĐƠN, PHẠT TIỀN VÀ HOÀN TIỀN
+CREATE PROCEDURE sp_CancelBooking
+    @booking_id INT,
+    @refund_amount DECIMAL(15,2),
+    @new_total_price DECIMAL(15,2)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        
+        -- Chuyển trạng thái hủy và cập nhật giá tiền thành phí phạt (hoặc 0đ)
+        UPDATE Booking SET booking_status = 'cancelled', total_price = @new_total_price WHERE booking_id = @booking_id;
+
+        -- Hoàn tiền vào ví
+        IF @refund_amount > 0
+        BEGIN
+            DECLARE @cancel_customer_id INT;
+            SELECT @cancel_customer_id = customer_id FROM Booking WHERE booking_id = @booking_id;
+            UPDATE Account SET balance = balance + @refund_amount WHERE customer_id = @cancel_customer_id;
+        END
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END;
+GO
+
 --VIEW
 CREATE VIEW vw_TopRoomsByRevenue AS
 WITH RoomRevenue AS (

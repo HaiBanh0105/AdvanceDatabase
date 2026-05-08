@@ -6,6 +6,106 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
 }
 require_once '../config/hotel_config.php';
 require_once '../dao/booking_dao.php';
+require_once '../config/mail_config.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception;
+
+require_once '../PHPMailer/Exception.php';
+require_once '../PHPMailer/PHPMailer.php';
+require_once '../PHPMailer/SMTP.php';
+
+function send_booking_email($booking_id, $type)
+{
+    $booking = booking_get_details_for_checkout($booking_id);
+    if (!$booking) return;
+
+    // Kiểm tra xem khách hàng này có tài khoản (người dùng online) không
+    $customer_id = db_query_value("SELECT customer_id FROM Booking WHERE booking_id = ?", $booking_id);
+    $account_email = db_query_value("SELECT email FROM Account WHERE customer_id = ?", $customer_id);
+
+    if (!$account_email) return; // Nếu không có Account => Khách Walk-in => Không gửi mail
+
+    $mail = new PHPMailer(true);
+    try {
+        $mail->isSMTP();
+        $mail->Host       = MAIL_HOST;
+        $mail->SMTPAuth   = true;
+        $mail->Username   = MAIL_USERNAME;
+        $mail->Password   = MAIL_PASSWORD;
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+        $mail->Port       = MAIL_PORT;
+        $mail->CharSet    = 'UTF-8';
+
+        $mail->setFrom(MAIL_USERNAME, MAIL_FROM_NAME);
+        $mail->addAddress($account_email);
+        $mail->isHTML(true);
+
+        $customer_name = $booking['guest_name'] ?? 'Khách hàng';
+        $room_number = $booking['room_number'] ?? 'Đang cập nhật';
+        $check_in = date('d/m/Y H:i', strtotime($booking['check_in']));
+        $check_out = date('d/m/Y H:i', strtotime($booking['check_out']));
+
+        if ($type === 'approved') {
+            $mail->Subject = 'Xác nhận đặt phòng thành công - Grand Horizon';
+            $total_price = number_format($booking['total_price'], 0, ',', '.');
+
+            $meta = booking_get_meta($booking_id);
+            $deposit = ($meta && !empty($meta['deposit_amount'])) ? number_format($meta['deposit_amount'], 0, ',', '.') : '0';
+
+            $mail->Body = "
+                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;'>
+                    <div style='background-color: #4F46E5; color: white; padding: 20px; text-align: center;'>
+                        <h2 style='margin: 0;'>Xác nhận Đặt phòng</h2>
+                    </div>
+                    <div style='padding: 20px; color: #374151; line-height: 1.6;'>
+                        <p>Xin chào <b>$customer_name</b>,</p>
+                        <p>Đơn đặt phòng của bạn đã được hệ thống duyệt thành công!</p>
+                        <h3 style='color: #4F46E5; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px;'>Chi tiết đơn:</h3>
+                        <ul style='list-style-type: none; padding: 0;'>
+                            <li style='margin-bottom: 8px;'><b>🏨 Phòng:</b> $room_number</li>
+                            <li style='margin-bottom: 8px;'><b>📥 Nhận phòng:</b> $check_in</li>
+                            <li style='margin-bottom: 8px;'><b>📤 Trả phòng (dự kiến):</b> $check_out</li>
+                            <li style='margin-bottom: 8px;'><b>💰 Tổng tiền:</b> <span style='color: #E11D48; font-weight: bold;'>$total_price đ</span></li>
+                            <li style='margin-bottom: 8px;'><b>💳 Tiền cọc đã thanh toán:</b> $deposit đ</li>
+                        </ul>
+                        <p>Cảm ơn bạn đã lựa chọn Grand Horizon. Chúc bạn một kỳ nghỉ tuyệt vời!</p>
+                    </div>
+                </div>
+            ";
+        } elseif ($type === 'checkout') {
+            $mail->Subject = 'Hóa đơn thanh toán & Cảm ơn - Grand Horizon';
+            $total_price = number_format($booking['total_price'], 0, ',', '.');
+
+            $actual_out = isset($booking['actual_check_out']) && $booking['actual_check_out'] ? date('d/m/Y H:i', strtotime($booking['actual_check_out'])) : date('d/m/Y H:i');
+
+            $mail->Body = "
+                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;'>
+                    <div style='background-color: #10B981; color: white; padding: 20px; text-align: center;'>
+                        <h2 style='margin: 0;'>Cảm ơn quý khách!</h2>
+                    </div>
+                    <div style='padding: 20px; color: #374151; line-height: 1.6;'>
+                        <p>Xin chào <b>$customer_name</b>,</p>
+                        <p>Quá trình trả phòng của bạn đã hoàn tất. Cảm ơn bạn đã tin tưởng và sử dụng dịch vụ tại Grand Horizon.</p>
+                        <h3 style='color: #10B981; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px;'>Chi tiết hóa đơn:</h3>
+                        <ul style='list-style-type: none; padding: 0;'>
+                            <li style='margin-bottom: 8px;'><b>🏨 Phòng:</b> $room_number</li>
+                            <li style='margin-bottom: 8px;'><b>📥 Nhận phòng:</b> $check_in</li>
+                            <li style='margin-bottom: 8px;'><b>📤 Trả phòng:</b> $actual_out</li>
+                            <li style='margin-bottom: 8px;'><b>💰 Tổng thanh toán:</b> <span style='color: #E11D48; font-weight: bold;'>$total_price đ</span></li>
+                        </ul>
+                        <p>Hẹn gặp lại bạn trong thời gian sớm nhất!</p>
+                    </div>
+                </div>
+            ";
+        }
+
+        $mail->send();
+    } catch (Exception $e) {
+        error_log('Mail Error: ' . $mail->ErrorInfo);
+    }
+}
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $action = $_POST['action'] ?? '';
@@ -38,34 +138,31 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
         }
 
-        $ok = booking_update_status($booking_id, $status);
-        if ($ok) {
-            // XỬ LÝ TRỪ TIỀN CỌC KHI ADMIN DUYỆT ĐƠN (pending -> confirmed/checked_in)
+        if ($status === 'cancelled') {
+            $refund_amount = 0;
+            $new_total_price = 0;
+            if ($current_b && in_array(strtolower($current_b['booking_status']), ['confirmed', 'checked_in', 'checked-in'])) {
+                $meta = booking_get_meta($booking_id);
+                if ($meta && !empty($meta['is_deducted'])) {
+                    $refund_amount = $meta['deposit_amount']; // Admin chủ động hủy -> Hoàn lại 100% cọc
+                }
+            }
+            $ok = booking_cancel_transaction($booking_id, $refund_amount, $new_total_price);
+        } else {
+            $deduct_amount = 0;
             if (in_array($status, ['confirmed', 'checked_in', 'checked-in']) && $current_b) {
                 $meta = booking_get_meta($booking_id);
                 if ($meta && empty($meta['is_deducted'])) {
-                    // Trừ tiền cọc từ Account
-                    db_execute("UPDATE Account SET balance = balance - ? WHERE customer_id = ?", $meta['deposit_amount'], $current_b['customer_id']);
+                    $deduct_amount = $meta['deposit_amount'];
                     booking_mark_deducted($booking_id);
                 }
             }
+            $ok = booking_update_status_transaction($booking_id, $status, $deduct_amount);
+        }
 
-            // XỬ LÝ HOÀN TIỀN KHI ADMIN LÀ NGƯỜI TỪ CHỐI/HỦY ĐƠN
-            if ($status === 'cancelled' && $current_b && in_array(strtolower($current_b['booking_status']), ['confirmed', 'checked_in', 'checked-in'])) {
-                $meta = booking_get_meta($booking_id);
-                if ($meta && !empty($meta['is_deducted'])) {
-                    // Hoàn lại đủ 100% do Admin chủ động hủy
-                    db_execute("UPDATE Account SET balance = balance + ? WHERE customer_id = ?", $meta['deposit_amount'], $current_b['customer_id']);
-                }
-            }
-
-            // Cập nhật tổng tiền về 0 nếu đơn bị hủy (Tránh bị tính thành doanh thu ảo)
-            if ($status === 'cancelled') {
-                db_execute("UPDATE Booking SET total_price = 0 WHERE booking_id = ?", $booking_id);
-            }
-
-            if ($status === 'checked_in') {
-                db_execute("UPDATE Booking_detail SET actual_check_in = ? WHERE booking_id = ?", date('Y-m-d H:i:s'), $booking_id);
+        if ($ok) {
+            if (in_array($status, ['confirmed', 'checked_in', 'checked-in']) && strtolower($current_b['booking_status']) === 'pending') {
+                send_booking_email($booking_id, 'approved');
             }
             header("Location: ../frontend/admin_bookings.php?msg=status_updated");
         } else {
@@ -204,6 +301,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             exit();
         }
 
+        send_booking_email($booking_id, 'checkout');
         header("Location: ../frontend/admin_bookings.php?msg=checkout_success");
         exit();
     } elseif ($action === 'mark_room_ready') {

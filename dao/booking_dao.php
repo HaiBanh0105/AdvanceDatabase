@@ -183,6 +183,27 @@ function booking_update_status($booking_id, $status)
     return true;
 }
 
+function booking_update_status_transaction($booking_id, $status, $deduct_amount = 0)
+{
+    $db_status = str_replace('_', '-', $status);
+    try {
+        db_execute("EXEC sp_UpdateBookingStatus @booking_id = ?, @new_status = ?, @deduct_amount = ?", $booking_id, $db_status, $deduct_amount);
+        return true;
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
+function booking_cancel_transaction($booking_id, $refund_amount, $new_total_price)
+{
+    try {
+        db_execute("EXEC sp_CancelBooking @booking_id = ?, @refund_amount = ?, @new_total_price = ?", $booking_id, $refund_amount, $new_total_price);
+        return true;
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
 function booking_get_all_admin($search = '')
 {
     if ($search !== '') {
